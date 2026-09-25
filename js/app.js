@@ -6,14 +6,18 @@ import { APP_VERSION, CAR_DEFAULTS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './co
 import { applyPlan, exportBackup, localBackupData, readBackupFile } from './backup.js';
 import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
+import { clearSheet, esc, kv, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
+import { createService } from './service.js';
 
 const $app = document.getElementById('app');
-const $sheet = document.getElementById('sheet');
-const $toast = document.getElementById('toast');
 
 const state = {
   car: null,
   readings: [],
+  works: [],
+  plans: [],
+  parts: [],
+  stock: [],
   meta: { id: 'meta' },
   onboarding: false,
   step: 1,
@@ -23,14 +27,21 @@ const state = {
   sync: { busy: false, again: false, error: '' },
 };
 
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
-  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
-}[c]));
-
 async function load() {
   state.car = await db.get('car', 'car');
   state.readings = await db.getAll('odometer');
+  state.works = await db.getAll('works');
+  state.plans = await db.getAll('plans');
+  state.parts = await db.getAll('parts');
+  state.stock = await db.getAll('stock');
   state.meta = (await db.get('meta', 'meta')) || { id: 'meta' };
+}
+
+// После любого изменения данных: перечитать, перерисовать, отправить в Google Таблицу.
+async function afterChange() {
+  await load();
+  render();
+  scheduleSync();
 }
 
 async function saveMeta(changes) {
@@ -95,35 +106,13 @@ function currentReading() {
 
 // ---------- Общие куски ----------
 
-const mascot = (cls = '') => `<div class="mascot ${cls}" aria-hidden="true">${icon('paw')}</div>`;
-
-function sheet(title, body) {
-  return `<div class="sheet-backdrop" data-action="closeSheet">
-    <section class="sheet" role="dialog" aria-label="${esc(title)}">
-      <div class="grabber"></div>
-      <h2>${esc(title)}</h2>
-      ${body}
-    </section></div>`;
-}
-
-function openSheet(html) {
-  $sheet.innerHTML = html;
-  const input = $sheet.querySelector('input');
-  if (input) setTimeout(() => input.focus(), 250);
-}
-
 function closeSheet() {
-  $sheet.innerHTML = '';
+  clearSheet();
   state.kmWarnFor = null;
   state.pendingImport = null;
 }
 
-let toastTimer = null;
-function toast(text, ms = 3000) {
-  $toast.innerHTML = `<div class="toast">${esc(text)}</div>`;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { $toast.innerHTML = ''; }, ms);
-}
+const service = createService({ state, currentKm: () => currentReading().km, afterChange });
 
 const importInput = () => '<input type="file" accept=".json,application/json" hidden data-change="importFile">';
 
@@ -157,12 +146,6 @@ function readCarFormRaw() {
     make: val('f-make'), model: val('f-model'), year: val('f-year'), engine: val('f-engine'),
     vin: val('f-vin'), purchaseDate: val('f-pdate'), purchaseKm: val('f-pkm'), currentKm: val('f-km'),
   };
-}
-
-function showFormError(id, text, warn = false) {
-  const el = document.getElementById(id);
-  el.className = warn ? 'error warn' : 'error';
-  el.textContent = text;
 }
 
 // ---------- Первый запуск ----------
@@ -230,19 +213,12 @@ function homeView() {
         <div class="value">${stats.perDay == null ? '—' : `~${L.formatKm(stats.perDay)} км/день`}</div>
         <div class="muted">${stats.perDay == null ? 'нужна неделя данных' : `~${L.formatKm(stats.perDay * 30)} км в месяц`}</div></div>
     </div>
-    <section class="card">
-      <h2>Состояние узлов</h2>
-      <p class="muted">Масло, фильтры, тормоза, АКБ, шины — появятся здесь на этапе «Обслуживание».</p>
-    </section>`;
+    ${service.homeCard()}`;
 }
 
 function soonView(title, text) {
   return `<h1>${title}</h1>
     <section class="card soon">${mascot()}<div><h2>Скоро</h2><p class="muted">${text}</p></div></section>`;
-}
-
-function kv(label, value) {
-  return `<div class="list-row"><div class="muted grow">${label}</div><div class="strong right">${esc(value)}</div></div>`;
 }
 
 function moreView() {
@@ -307,10 +283,11 @@ function render() {
     $app.innerHTML = `<main class="screen onboard">${onboardingView()}</main>`;
     return;
   }
-  const route = location.hash.replace(/^#\//, '') || 'home';
+  // Адрес вида #/service/node/oil: раздел — первая часть, остальное — внутри раздела.
+  const [route, ...rest] = (location.hash.replace(/^#\//, '') || 'home').split('/');
   const views = {
     home: homeView,
-    service: () => soonView('Обслуживание', 'График замен (масло, фильтры, свечи, АКПП…), история работ на СТО и напоминания.'),
+    service: () => service.view(rest.join('/')),
     expenses: () => soonView('Расходы', 'Заправки, ремонт, мойка, парковки и страховка — с итогами по месяцам и стоимостью 1 км.'),
     more: moreView,
   };
@@ -350,9 +327,11 @@ function editReadingSheet(r) {
 function addSheet() {
   const soonRow = (ic, label, msg) => `<button class="list-btn" data-action="soon" data-msg="${msg}">
     ${icon(ic, 'accent')}<span class="grow">${label}</span><span class="tag">скоро</span></button>`;
+  const row = (action, ic, label) => `<button class="list-btn" data-action="${action}">${icon(ic, 'accent')}<span class="grow">${label}</span>${icon('chevron')}</button>`;
   return sheet('Добавить', `
-    <button class="list-btn" data-action="addKm">${icon('gauge', 'accent')}<span class="grow">Пробег</span>${icon('chevron')}</button>
-    ${soonRow('tool', 'Работа на СТО', 'Работы на СТО появятся на этапе «Обслуживание»')}
+    ${row('addKm', 'gauge', 'Пробег')}
+    ${row('newWork', 'tool', 'Работа на СТО')}
+    ${row('editPlan', 'list', 'План')}
     ${soonRow('fuel', 'Заправка', 'Заправки появятся на этапе «Расходы»')}
     ${soonRow('wallet', 'Расход', 'Расходы появятся на этапе «Расходы»')}`);
 }
@@ -610,6 +589,8 @@ const actions = {
     if (el.classList.contains('sheet-backdrop') && e.target !== el) return;
     closeSheet();
   },
+
+  ...service.actions,
 };
 
 document.addEventListener('click', (e) => {
