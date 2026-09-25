@@ -1,0 +1,191 @@
+/* Дизайн «Лаванда + тёмно-синий» — описание в docs/DESIGN.md */
+:root {
+  --bg: #F6F4FC;
+  --card: #FFFFFF;
+  --line: #E6E1F5;
+  --text: #1B2345;
+  --navy: #1B2345;
+  --muted: #7A7F9A;
+  --accent: #7C5CD6;
+  --accent-press: #6A4BC4;
+  --accent-soft: #ECE7FC;
+  --field-hl: #FBFAFF;
+  --water: #5AA7E8;
+  --chrome: #C9D2E0;
+  --ok: #23A45E;
+  --warn: #F2B92B;
+  --warn-text: #B7811A;
+  --bad: #E5484D;
+  --radius: 16px;
+  --safe-t: env(safe-area-inset-top);
+  --safe-b: env(safe-area-inset-bottom);
+}
+
+* { box-sizing: border-box; margin: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+#app { max-width: 480px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; }
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: calc(16px + var(--safe-t)) 16px calc(100px + var(--safe-b));
+}
+.screen.onboard { padding-bottom: calc(20px + var(--safe-b)); min-height: 100dvh; }
+
+h1 { font-size: 24px; font-weight: 600; line-height: 1.25; }
+h2 { font-size: 17px; font-weight: 600; }
+b, .strong { font-weight: 600; }
+.muted { color: var(--muted); font-size: 13px; }
+.grow { flex: 1; min-width: 0; }
+.right { text-align: right; }
+.center-text { text-align: center; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; }
+.card.stack { display: flex; flex-direction: column; gap: 10px; }
+.card-head { display: flex; align-items: center; justify-content: space-between; }
+
+.ic { width: 20px; height: 20px; flex: none; }
+.ic.accent { color: var(--accent); }
+.ic.green { color: var(--ok); }
+
+/* Кнопки */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; min-height: 50px; padding: 0 16px;
+  border: 0; border-radius: 14px; background: none;
+  font: inherit; font-weight: 600; font-size: 15px; color: inherit;
+  cursor: pointer;
+}
+.btn.primary { background: var(--accent); color: #FFFFFF; }
+.btn.primary:active { background: var(--accent-press); }
+.btn.outline { border: 1.5px solid var(--accent); color: var(--accent); }
+.btn.link { color: var(--accent); min-height: 44px; }
+.btn.small { min-height: 42px; font-size: 14px; }
+.card-head .btn.small { width: auto; min-height: 32px; padding: 0 4px; }
+.icon-btn { border: 0; background: none; color: var(--text); padding: 4px; margin-left: -6px; display: grid; place-items: center; cursor: pointer; }
+.icon-btn .ic { width: 26px; height: 26px; }
+
+/* Талисман (пока заглушка-лапка) */
+.mascot {
+  width: 46px; height: 46px; flex: none;
+  border-radius: 50%; background: var(--navy); border: 2px solid var(--chrome); color: var(--chrome);
+  display: grid; place-items: center;
+}
+.mascot .ic { width: 58%; height: 58%; }
+.mascot.xl { width: 128px; height: 128px; border-width: 3px; box-shadow: 0 0 0 10px var(--accent-soft); }
+.hello { display: flex; align-items: flex-end; gap: 10px; }
+.bubble { background: var(--accent-soft); border-radius: 16px 16px 16px 4px; padding: 9px 12px; font-size: 13px; line-height: 1.35; }
+
+/* Первый запуск */
+.welcome { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; padding: 0 12px; }
+.progress { display: flex; gap: 6px; }
+.progress span { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.progress span.on { background: var(--accent); }
+.title-row { display: flex; align-items: center; gap: 4px; }
+
+/* Поля */
+.row { display: flex; gap: 10px; }
+.row > .btn { flex: 1; }
+.field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.row > .field { flex: 1; }
+.field.narrow { flex: 0 0 90px; }
+.field > span { font-size: 12px; font-weight: 500; color: var(--muted); }
+.field em { font-style: normal; font-weight: 400; }
+input {
+  width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px;
+  font: inherit; font-size: 16px; color: var(--text);
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  -webkit-appearance: none; appearance: none;
+}
+input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input::placeholder { color: var(--muted); }
+.field.hl input { background: var(--field-hl); border-color: var(--accent); }
+.error { color: var(--bad); font-size: 13px; }
+.error:empty { display: none; }
+.error.warn { color: var(--warn-text); }
+
+/* Главная */
+.hero { display: flex; flex-direction: column; gap: 2px; }
+.hero .btn { margin-top: 10px; }
+.car-line { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.heart { color: var(--accent); margin-left: auto; display: flex; }
+.km-big { font-size: 36px; font-weight: 600; letter-spacing: -0.5px; line-height: 1.15; }
+.km-big small { font-size: 16px; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile .label { font-size: 12px; color: var(--muted); }
+.tile .value { font-weight: 600; font-size: 17px; margin: 2px 0; }
+.soon { display: flex; gap: 12px; align-items: flex-start; }
+
+/* Списки */
+.list-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.list-row:last-child, .list-row.plain { border-bottom: 0; }
+.list-btn {
+  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 54px; padding: 0 14px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  font: inherit; font-weight: 500; color: var(--text); text-align: left; cursor: pointer;
+}
+button.list-row { width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ic.muted-ic { color: var(--muted); width: 16px; height: 16px; }
+.btn.danger { color: var(--bad); }
+.tag.ok { background: #E3F5EA; color: #1B7A45; }
+.err-text { color: var(--bad); }
+hr { border: 0; border-top: 1px solid var(--line); }
+a.btn { text-decoration: none; }
+.tag { font-size: 11px; font-weight: 600; background: var(--accent-soft); color: var(--accent); padding: 3px 9px; border-radius: 999px; }
+
+/* Нижняя панель */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+  max-width: 480px; margin: 0 auto;
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 8px 8px calc(8px + var(--safe-b));
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+}
+.tab { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 58px; color: var(--muted); text-decoration: none; font-size: 11px; font-weight: 500; }
+.tab .ic { width: 24px; height: 24px; }
+.tab.on { color: var(--accent); }
+.tab-plus {
+  width: 52px; height: 52px; border: 0; border-radius: 50%;
+  background: var(--accent); color: #FFFFFF; display: grid; place-items: center; cursor: pointer;
+  box-shadow: 0 6px 16px rgba(124, 92, 214, 0.35);
+}
+.tab-plus .ic { width: 26px; height: 26px; }
+
+/* Окно снизу */
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(27, 35, 69, 0.35);
+  animation: fade 0.15s ease-out;
+}
+.sheet {
+  width: 100%; max-width: 480px; max-height: 92dvh; overflow: auto;
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 10px 16px calc(20px + var(--safe-b));
+  background: var(--bg); border-radius: 22px 22px 0 0;
+  animation: up 0.22s ease-out;
+}
+.grabber { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(96px + var(--safe-b)); z-index: 20; transform: translateX(-50%);
+  max-width: 90%; padding: 10px 16px; border-radius: 12px;
+  background: var(--navy); color: #FFFFFF; font-size: 13px; text-align: center;
+}
+
+@keyframes fade { from { opacity: 0; } }
+@keyframes up { from { transform: translateY(100%); } }
