@@ -11,17 +11,59 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
 
 export const mascot = (cls = '') => `<div class="mascot ${cls}" aria-hidden="true">${icon('paw')}</div>`;
 
+// Окно снизу. Шапка с «язычком» и крестиком прилипает сверху; окно можно смахнуть вниз.
 export function sheet(title, body) {
   return `<div class="sheet-backdrop" data-action="closeSheet">
     <section class="sheet" role="dialog" aria-label="${esc(title)}">
-      <div class="grabber"></div>
-      <h2>${esc(title)}</h2>
+      <header class="sheet-head"><div class="grabber"></div>
+        <div class="sheet-title"><h2>${esc(title)}</h2>
+        <button class="sheet-x" data-action="closeSheet" aria-label="Закрыть">${icon('close')}</button></div></header>
       ${body}
     </section></div>`;
 }
 
-export function openSheet(html, { focus = true } = {}) {
+const SWIPE_CLOSE_PX = 90;
+let onSwipeClose = () => clearSheet();
+
+// Кто закрывает окно при смахивании (app.js сбрасывает заодно своё состояние).
+export function setSheetCloser(fn) {
+  onSwipeClose = fn;
+}
+
+function enableSwipe(sheetEl) {
+  let startY = null;
+  let dy = 0;
+  sheetEl.addEventListener('touchstart', (e) => {
+    // Тянуть можно за шапку или когда окно прокручено в самый верх.
+    const fromHead = e.target.closest('.sheet-head');
+    if (!fromHead && sheetEl.scrollTop > 0) return;
+    startY = e.touches[0].clientY;
+    dy = 0;
+    sheetEl.style.transition = 'none';
+  }, { passive: true });
+  sheetEl.addEventListener('touchmove', (e) => {
+    if (startY == null) return;
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    if (dy > 0) sheetEl.style.transform = `translateY(${dy}px)`;
+  }, { passive: true });
+  sheetEl.addEventListener('touchend', () => {
+    if (startY == null) return;
+    startY = null;
+    sheetEl.style.transition = 'transform .2s ease-out';
+    if (dy > SWIPE_CLOSE_PX) {
+      sheetEl.style.transform = 'translateY(100%)';
+      setTimeout(() => onSwipeClose(), 180);
+    } else {
+      sheetEl.style.transform = '';
+    }
+  });
+}
+
+// focus: сразу открыть клавиатуру — только для маленьких окон с одним полем (пробег, код).
+export function openSheet(html, { focus = false } = {}) {
   $sheet.innerHTML = html;
+  const sheetEl = $sheet.querySelector('.sheet');
+  if (sheetEl) enableSwipe(sheetEl);
   const input = $sheet.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=date])');
   if (focus && input) setTimeout(() => input.focus(), 250);
 }

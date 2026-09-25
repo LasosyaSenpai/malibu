@@ -6,7 +6,7 @@ import { APP_VERSION, CAR_DEFAULTS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './co
 import { applyPlan, exportBackup, localBackupData, readBackupFile } from './backup.js';
 import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
-import { clearSheet, esc, kv, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
+import { clearSheet, esc, kv, mascot, openSheet, setSheetCloser, sheet, showFormError, toast } from './ui.js';
 import { createService } from './service.js';
 
 const $app = document.getElementById('app');
@@ -111,6 +111,8 @@ function closeSheet() {
   state.kmWarnFor = null;
   state.pendingImport = null;
 }
+
+setSheetCloser(closeSheet);
 
 const service = createService({ state, currentKm: () => currentReading().km, afterChange });
 
@@ -424,7 +426,7 @@ const actions = {
   },
 
   openRestore() { openSheet(restoreSheet()); },
-  openConnect(el) { openSheet(connectSheet(Boolean(el.dataset.restore))); },
+  openConnect(el) { openSheet(connectSheet(Boolean(el.dataset.restore)), { focus: true }); },
 
   async connect(el) {
     const parsed = L.parseSyncCode(document.getElementById('sync-code').value);
@@ -483,7 +485,7 @@ const actions = {
 
   openKm() {
     state.kmWarnFor = null;
-    openSheet(kmSheet());
+    openSheet(kmSheet(), { focus: true });
   },
 
   async saveKm() {
@@ -507,7 +509,7 @@ const actions = {
 
   editReading(el) {
     const r = state.readings.find((x) => x.id === el.dataset.id);
-    if (r) openSheet(editReadingSheet(r));
+    if (r) openSheet(editReadingSheet(r), { focus: true });
   },
 
   async saveReading(el) {

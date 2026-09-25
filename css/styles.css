@@ -240,7 +240,17 @@ select {
   background: var(--bg); border-radius: 22px 22px 0 0;
   animation: up 0.22s ease-out;
 }
-.grabber { width: 40px; height: 5px; border-radius: 3px; background: var(--line); align-self: center; }
+.sheet-head {
+  position: sticky; top: -10px; z-index: 2; margin: -10px -16px 0; padding: 8px 16px 6px;
+  background: var(--bg); display: flex; flex-direction: column; gap: 6px; touch-action: none;
+}
+.grabber { width: 40px; height: 5px; border-radius: 3px; background: #CFC7EA; align-self: center; }
+.sheet-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sheet-x {
+  width: 32px; height: 32px; flex: none; border: 0; border-radius: 50%; background: var(--accent-soft); color: var(--muted);
+  display: grid; place-items: center; cursor: pointer;
+}
+.sheet-x .ic { width: 18px; height: 18px; }
 
 .toast {
   position: fixed; left: 50%; bottom: calc(96px + var(--safe-b)); z-index: 20; transform: translateX(-50%);
