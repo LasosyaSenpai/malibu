@@ -94,7 +94,32 @@ b, .strong { font-weight: 600; }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes jump { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-16px) scale(1.08); } 65% { transform: translateY(2px) scale(.97); } 100% { transform: translateY(0) scale(1); } }
 @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
-@media (prefers-reduced-motion: reduce) { .mascot, .mascot.jump, .mascot.shake { animation: none; } }
+/* Акулёнок на весь экран */
+.celebrate {
+  position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+  background: rgba(246, 244, 252, 0.88); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  animation: fade .2s ease-out; overflow: hidden; padding: 24px;
+}
+.celebrate.out { opacity: 0; transition: opacity .3s ease-in; }
+.cel-shark {
+  width: min(64vw, 260px); aspect-ratio: 1; border-radius: 50%; overflow: hidden;
+  border: 4px solid var(--chrome); box-shadow: 0 0 0 14px var(--accent-soft), 0 18px 40px rgba(27, 35, 69, .18);
+  animation: pop .6s cubic-bezier(.2, 1.4, .4, 1) both, float 2.4s ease-in-out .6s infinite;
+}
+.cel-shark img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cel-text { font-size: 20px; font-weight: 600; text-align: center; max-width: 300px; animation: rise .5s ease-out .25s both; }
+.cel-bubbles i {
+  position: absolute; bottom: -30px; border-radius: 50%; background: rgba(90, 167, 232, .35);
+  border: 1.5px solid rgba(90, 167, 232, .6); animation: bubble 2.2s ease-in both;
+}
+@keyframes pop { 0% { transform: scale(.3) rotate(-12deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes rise { from { transform: translateY(14px); opacity: 0; } }
+@keyframes bubble { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-105vh); opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot, .mascot.jump, .mascot.shake, .cel-shark, .cel-text, .cel-bubbles i { animation: none; }
+}
 .hello { display: flex; align-items: flex-end; gap: 10px; }
 .bubble { background: var(--accent-soft); border-radius: 16px 16px 16px 4px; padding: 9px 12px; font-size: 13px; line-height: 1.35; }
 

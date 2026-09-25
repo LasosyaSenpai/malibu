@@ -13,23 +13,39 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
 // Позы: hero (целиком), calm, happy (всё хорошо), wink (совет), surprised (не заполнено / срочно),
 // proud (после работы на СТО и покупок), excited («Сделано»), curious (нет данных), sleepy (давно не заходила),
 // mischief (по нажатию), lick (после заправки — этап «Расходы»).
-// move: '' | 'shake'. После сохранения следующий показанный талисман прыгает в позе из cheer().
+// move: '' | 'shake'.
 export const MASCOT_TAP_POSES = ['mischief', 'wink', 'happy', 'excited'];
-let cheerPose = null;
-export function cheer(pose = 'excited') {
-  cheerPose = pose;
-}
+const CELEBRATE_MS = 2300;
+const BUBBLES = 12;
 
 export function mascot(cls = '', pose = 'calm', move = '') {
-  let p = pose;
-  let m = move;
-  if (cheerPose && !cls.includes('xl')) {
-    p = cheerPose;
-    m = 'jump';
-    cheerPose = null;
-  }
-  return `<button class="mascot ${cls} ${m}" data-action="mascotTap" data-pose="${p}" aria-label="Акулёнок">
-    <img src="img/shark-${p}.png" alt="" draggable="false"></button>`;
+  return `<button class="mascot ${cls} ${move}" data-action="mascotTap" data-pose="${pose}" aria-label="Акулёнок">
+    <img src="img/shark-${pose}.png" alt="" draggable="false"></button>`;
+}
+
+// Акулёнок на весь экран на пару секунд: после работы на СТО, «Сделано», в будущем — после заправки.
+// Закрывается сам или по нажатию.
+export function celebrate(pose, text) {
+  document.querySelector('.celebrate')?.remove();
+  const bubbles = Array.from({ length: BUBBLES }, (_, i) => {
+    const left = 6 + Math.round((88 / BUBBLES) * i + Math.random() * 6);
+    const size = 8 + Math.round(Math.random() * 16);
+    const delay = (Math.random() * 0.9).toFixed(2);
+    return `<i style="left:${left}%;width:${size}px;height:${size}px;animation-delay:${delay}s"></i>`;
+  }).join('');
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `<div class="cel-bubbles" aria-hidden="true">${bubbles}</div>
+    <div class="cel-shark"><img src="img/shark-${pose}.png" alt=""></div>
+    <div class="cel-text">${esc(text)}</div>`;
+  const close = () => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 300);
+  };
+  el.addEventListener('click', close);
+  document.body.append(el);
+  setTimeout(close, CELEBRATE_MS);
 }
 
 // Нажали на акулёнка: подпрыгивает и на секунду корчит рожицу.

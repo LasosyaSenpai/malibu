@@ -6,7 +6,7 @@ import * as L from './logic.js';
 import * as M from './maintenance.js';
 import { CATEGORIES, NODES } from './config.js';
 import { icon } from './icons.js';
-import { cheer, clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
+import { celebrate, clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
 
 const TABS = [
   ['overview', 'Обзор'], ['nodes', 'Узлы'], ['history', 'История'], ['plans', 'Планы'], ['parts', 'Расходники'],
@@ -296,11 +296,11 @@ export function createService(ctx) {
   const val = (id) => document.getElementById(id)?.value ?? '';
   const find = (list, id) => list.find((x) => x.id === id) || null;
 
-  // pose — чем акулёнок отреагирует на следующем экране (proud — работа на СТО, excited — «Сделано»).
-  async function done(message, { pose = null } = {}) {
+  // С celebrate — акулёнок на весь экран (новая работа, «Сделано»), иначе — короткое сообщение внизу.
+  async function done(message, { celebrate: cel = null } = {}) {
     clearSheet();
-    toast(message);
-    if (pose) cheer(pose);
+    if (cel) celebrate(cel.pose, cel.text);
+    else toast(message);
     await ctx.afterChange();
   }
 
@@ -344,8 +344,10 @@ export function createService(ctx) {
       }
       const plan = find(state.plans, el.dataset.plan);
       if (plan) await db.put('plans', { ...plan, done: true, doneWorkId: saved.id });
-      await done(plan ? 'Сделано — план перенесён в историю' : 'Работа сохранена',
-        { pose: plan ? 'excited' : existing ? null : 'proud' });
+      let cel = null;
+      if (plan) cel = { pose: 'excited', text: 'Сделано! Одним делом меньше' };
+      else if (!existing) cel = { pose: 'proud', text: 'Записала! Спасибо, что заботишься обо мне' };
+      await done('Работа сохранена', { celebrate: cel });
     },
 
     async deleteWork(el) {
