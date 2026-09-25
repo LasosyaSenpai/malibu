@@ -64,6 +64,12 @@ async function runSync() {
     state.sync.busy = false;
   }
   if (state.sync.again) { state.sync.again = false; runSync(); return; }
+  // Данные машины пришли из Таблицы, пока открыт первый запуск (например, восстановление на новом телефоне).
+  if (state.onboarding && state.car) {
+    state.onboarding = false;
+    closeSheet();
+    location.hash = '#/home';
+  }
   if (!state.onboarding) render();
 }
 
