@@ -2,7 +2,7 @@
 
 import * as db from './db.js';
 import * as L from './logic.js';
-import { APP_VERSION, CAR_DEFAULTS, SLEEPY_DAYS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
+import { APP_VERSION, CAR_DEFAULTS, CAR_PHOTO, SLEEPY_DAYS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
 import { applyPlan, exportBackup, localBackupData, readBackupFile } from './backup.js';
 import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
@@ -200,17 +200,20 @@ function homeView() {
   const stats = L.drivingStats(c, latest, today);
   const backups = [state.meta.lastExportAt, state.meta.lastSyncAt].filter(Boolean).sort();
   const tip = L.pickTip({ latest, lastBackupAt: backups.pop() || null, today });
+  // Шапка — фото Malibu с пробегом (решение 26.09), акулёнок — только ниже, у напоминания.
   return `
+    <section class="car-photo" style="background-image:url(${CAR_PHOTO})">
+      <div class="car-shade"></div>
+      <div class="car-info">
+        <div class="car-line">${esc(c.make)} ${esc(c.model)} · ${esc(c.year)} · ${esc(c.engine)} <span class="heart">${icon('heart')}</span></div>
+        <div class="km-big">${L.formatKm(latest.km)} <small>км</small></div>
+        <div class="car-date">обновлено ${L.formatDate(latest.date)}</div>
+      </div>
+    </section>
+    <button class="btn outline small" data-action="openKm">${icon('gauge')} Обновить пробег</button>
     ${state.sleepyDays
     ? `<div class="hello">${mascot('', 'sleepy')}<div class="bubble">Давно не виделись — ${state.sleepyDays} ${L.plural(state.sleepyDays, L.DAYS)}! Обнови пробег, и я проверю, не пора ли что-то менять</div></div>`
     : `<div class="hello">${mascot('', tip.mood === 'calm' ? 'happy' : tip.mood)}<div class="bubble">${esc(tip.text)}</div></div>`}
-    <section class="card hero">
-      <div class="car-line">${esc(c.make)} ${esc(c.model)} · ${esc(c.year)} · ${esc(c.engine)}
-        <span class="heart">${icon('heart')}</span></div>
-      <div class="km-big">${L.formatKm(latest.km)} <small>км</small></div>
-      <div class="muted">обновлено ${L.formatDate(latest.date)}</div>
-      <button class="btn outline small" data-action="openKm">${icon('gauge')} Обновить пробег</button>
-    </section>
     <div class="tiles">
       <div class="card tile"><div class="label">С покупки</div><div class="value">+${L.formatKm(stats.kmSince)} км</div>
         <div class="muted">за ${stats.days} ${L.plural(stats.days, L.DAYS)}</div></div>

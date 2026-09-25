@@ -1,6 +1,6 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.3.2';
+export const APP_VERSION = '0.3.3';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.
@@ -24,6 +24,8 @@ export const CAR_DEFAULTS = {
 };
 
 export const MIN_CAR_YEAR = 1950;
+// Фото в шапке главного экрана — Malibu из картинки GPT «Forest Sunset» (решение 26.09).
+export const CAR_PHOTO = 'img/car-header.jpg';
 export const TIP_EXPORT_DAYS = 14; // напомнить про файл-бекап, если не делали дольше
 export const TIP_KM_DAYS = 7; // напомнить обновить пробег
 export const BIG_JUMP_KM = 3000; // переспросить, если пробег вырос больше чем на столько

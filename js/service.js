@@ -216,7 +216,8 @@ export function createService(ctx) {
   // Карточка на главном экране.
   function homeCard() {
     const st = statuses();
-    const soon = M.soonItems(st, state.plans).slice(0, 4);
+    // Масло показываем всегда первой строкой, поэтому из «скоро пора» его убираем.
+    const soon = M.soonItems(st, state.plans).filter((i) => i.key !== 'oil').slice(0, 4);
     const oil = st.find((s) => s.node.key === 'oil');
     return `<section class="card">
       <div class="row-between"><h2>Обслуживание</h2><a class="link-btn" href="#/service">всё →</a></div>
