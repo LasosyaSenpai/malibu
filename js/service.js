@@ -13,6 +13,7 @@ const TABS = [
 ];
 const CASES = ['дело', 'дела', 'дел'];
 const WORKS = ['работа', 'работы', 'работ'];
+const YEARS = ['год', 'года', 'лет'];
 const SHARE_COLORS = ['#1B2345', '#7C5CD6', '#A993EA', '#D3C8F5', '#E6E1F5'];
 const LEVEL_CLASS = { ok: 'lv-ok', wa: 'lv-wa', bad: 'lv-bad' };
 
@@ -64,7 +65,7 @@ export function createService(ctx) {
       : 'По регламенту всё в порядке. Хорошей дороги!';
     // Есть срочное — переживает; есть «скоро» — подмигивает с советом; всё хорошо — спокоен.
     const urgent = soon.some((i) => i.level === 'bad');
-    const face = urgent ? mascot('', 'main', 'shake') : mascot('', soon.length ? 'wink' : 'calm');
+    const face = urgent ? mascot('', 'surprised', 'shake') : mascot('', soon.length ? 'wink' : 'happy');
     return `${chips('overview')}
       <div class="hello">${face}<div class="bubble">${esc(bubble)}</div></div>
       ${soon.length ? `<div class="sec">Скоро пора · ${soon.length}</div>
@@ -161,11 +162,15 @@ export function createService(ctx) {
     const item = statuses().find((s) => s.node.key === key);
     if (!item) return overview();
     const { node, status, events } = item;
-    const interval = [node.km ? `${L.formatKm(node.km)} км` : '', node.months ? `${node.months} мес.` : ''].filter(Boolean).join(' или ');
+    const months = !node.months ? '' : node.months % 12 === 0
+      ? `${node.months / 12} ${L.plural(node.months / 12, YEARS)}` : `${node.months} мес.`;
+    const interval = [node.km ? `${L.formatKm(node.km)} км` : '', months].filter(Boolean).join(' или ');
     const verb = node.kind === 'check' ? 'Отметить проверку' : node.kind === 'season' ? 'Отметить переобувку' : 'Отметить замену';
     const parts = state.parts.filter((p) => p.nodeKey === key);
     const works = new Map(state.works.map((w) => [w.id, w]));
+    const noData = !status.last && !status.lastCheck && node.kind !== 'season';
     return `<div class="title-row"><a class="icon-btn" href="#/service/nodes" aria-label="Назад">${icon('back')}</a><h1>${esc(node.title)}</h1></div>
+      ${noData ? `<div class="hello">${mascot('', 'curious')}<div class="bubble">Не знаю, когда это ${node.kind === 'check' ? 'проверяли' : 'меняли'}. Если знаешь — нажми внизу «${verb}» и укажи дату</div></div>` : ''}
       <section class="card"><div class="row-between"><span class="dot ${LEVEL_CLASS[status.level]}"></span><b class="grow">${esc(status.label)}</b>
         <span class="muted">${status.nextKm ? `след. ~${L.formatKm(status.nextKm)} км` : ''}</span></div>${bar(status.progress, status.level)}</section>
       ${node.kind !== 'season' ? `<section class="card"><div class="muted">Интервал</div><b>${node.kind === 'check' ? 'проверка ' : ''}${interval || '—'}</b>
@@ -291,10 +296,11 @@ export function createService(ctx) {
   const val = (id) => document.getElementById(id)?.value ?? '';
   const find = (list, id) => list.find((x) => x.id === id) || null;
 
-  async function done(message, { happy = false } = {}) {
+  // pose — чем акулёнок отреагирует на следующем экране (proud — работа на СТО, excited — «Сделано»).
+  async function done(message, { pose = null } = {}) {
     clearSheet();
     toast(message);
-    if (happy) cheer();
+    if (pose) cheer(pose);
     await ctx.afterChange();
   }
 
@@ -338,7 +344,8 @@ export function createService(ctx) {
       }
       const plan = find(state.plans, el.dataset.plan);
       if (plan) await db.put('plans', { ...plan, done: true, doneWorkId: saved.id });
-      await done(plan ? 'Сделано — план перенесён в историю' : 'Работа сохранена', { happy: !existing });
+      await done(plan ? 'Сделано — план перенесён в историю' : 'Работа сохранена',
+        { pose: plan ? 'excited' : existing ? null : 'proud' });
     },
 
     async deleteWork(el) {

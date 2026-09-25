@@ -2,11 +2,11 @@
 
 import * as db from './db.js';
 import * as L from './logic.js';
-import { APP_VERSION, CAR_DEFAULTS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
+import { APP_VERSION, CAR_DEFAULTS, SLEEPY_DAYS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
 import { applyPlan, exportBackup, localBackupData, readBackupFile } from './backup.js';
 import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
-import { clearSheet, esc, kv, mascot, openSheet, setSheetCloser, sheet, showFormError, toast } from './ui.js';
+import { clearSheet, esc, kv, mascot, mascotTap, openSheet, setSheetCloser, sheet, showFormError, toast } from './ui.js';
 import { createService } from './service.js';
 
 const $app = document.getElementById('app');
@@ -39,6 +39,7 @@ async function load() {
 
 // После любого изменения данных: перечитать, перерисовать, отправить в Google Таблицу.
 async function afterChange() {
+  state.sleepyDays = 0;
   await load();
   render();
   scheduleSync();
@@ -200,7 +201,9 @@ function homeView() {
   const backups = [state.meta.lastExportAt, state.meta.lastSyncAt].filter(Boolean).sort();
   const tip = L.pickTip({ latest, lastBackupAt: backups.pop() || null, today });
   return `
-    <div class="hello">${mascot('', tip.mood)}<div class="bubble">${esc(tip.text)}</div></div>
+    ${state.sleepyDays
+    ? `<div class="hello">${mascot('', 'sleepy')}<div class="bubble">Давно не виделись — ${state.sleepyDays} ${L.plural(state.sleepyDays, L.DAYS)}! Обнови пробег, и я проверю, не пора ли что-то менять</div></div>`
+    : `<div class="hello">${mascot('', tip.mood === 'calm' ? 'happy' : tip.mood)}<div class="bubble">${esc(tip.text)}</div></div>`}
     <section class="card hero">
       <div class="car-line">${esc(c.make)} ${esc(c.model)} · ${esc(c.year)} · ${esc(c.engine)}
         <span class="heart">${icon('heart')}</span></div>
@@ -220,7 +223,7 @@ function homeView() {
 
 function soonView(title, text) {
   return `<h1>${title}</h1>
-    <section class="card soon">${mascot()}<div><h2>Скоро</h2><p class="muted">${text}</p></div></section>`;
+    <section class="card soon">${mascot('', 'lick')}<div><h2>Скоро</h2><p class="muted">${text}</p></div></section>`;
 }
 
 function moreView() {
@@ -592,12 +595,7 @@ const actions = {
     closeSheet();
   },
 
-  // Нажали на акулёнка — подпрыгивает.
-  mascotTap(el) {
-    el.classList.remove('jump', 'shake');
-    void el.offsetWidth;
-    el.classList.add('jump');
-  },
+  mascotTap(el) { mascotTap(el); },
 
   ...service.actions,
 };
@@ -635,6 +633,11 @@ window.addEventListener('hashchange', () => {
 async function boot() {
   await load();
   state.onboarding = !state.car;
+  // Давно не открывала приложение — акулёнок «спал» (показываем один раз, до следующего действия).
+  const lastOpen = state.meta.lastOpenAt;
+  const away = lastOpen ? L.daysBetween(L.todayIso(new Date(lastOpen)), L.todayIso()) : 0;
+  state.sleepyDays = state.car && away >= SLEEPY_DAYS ? away : 0;
+  await saveMeta({ lastOpenAt: new Date().toISOString() });
   if (!location.hash) history.replaceState(null, '', '#/home');
   render();
   if (state.car) scheduleSync();

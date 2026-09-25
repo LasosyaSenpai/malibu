@@ -1,6 +1,6 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.2.2';
+export const APP_VERSION = '0.3.0';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.
@@ -28,6 +28,7 @@ export const TIP_EXPORT_DAYS = 14; // напомнить про файл-бек�
 export const TIP_KM_DAYS = 7; // напомнить обновить пробег
 export const BIG_JUMP_KM = 3000; // переспросить, если пробег вырос больше чем на столько
 export const MIN_DAYS_FOR_AVG = 7; // «км в день» считаем, когда данных хотя бы за неделю
+export const SLEEPY_DAYS = 14; // не открывала приложение столько дней — акулёнок «проснулся»
 
 // Синхронизация с Google Таблицей через Apps Script пользователя (папка backend/).
 export const SYNC_CODE_PREFIX = 'https://script.google.com/macros/s/';

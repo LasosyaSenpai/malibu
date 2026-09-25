@@ -9,24 +9,39 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
 
-// Акулёнок-талисман (картинка пользователя от GPT, позы вырезаны в app/img).
-// pose: hero (целиком), main (лицо), calm (спокойный), wink (совет), joy (радость).
-// move: '' | 'shake' (переживает). После «Сделано» следующий показанный талисман прыгает от радости.
-let cheerPending = false;
-export function cheer() {
-  cheerPending = true;
+// Акулёнок-талисман (картинки пользователя от GPT, позы вырезаны в app/img, решения — docs/DECISIONS.md).
+// Позы: hero (целиком), calm, happy (всё хорошо), wink (совет), surprised (не заполнено / срочно),
+// proud (после работы на СТО и покупок), excited («Сделано»), curious (нет данных), sleepy (давно не заходила),
+// mischief (по нажатию), lick (после заправки — этап «Расходы»).
+// move: '' | 'shake'. После сохранения следующий показанный талисман прыгает в позе из cheer().
+export const MASCOT_TAP_POSES = ['mischief', 'wink', 'happy', 'excited'];
+let cheerPose = null;
+export function cheer(pose = 'excited') {
+  cheerPose = pose;
 }
 
 export function mascot(cls = '', pose = 'calm', move = '') {
   let p = pose;
   let m = move;
-  if (cheerPending) {
-    cheerPending = false;
-    p = cls.includes('xl') ? p : 'joy';
+  if (cheerPose && !cls.includes('xl')) {
+    p = cheerPose;
     m = 'jump';
+    cheerPose = null;
   }
-  return `<button class="mascot ${cls} ${m}" data-action="mascotTap" aria-label="Акулёнок">
+  return `<button class="mascot ${cls} ${m}" data-action="mascotTap" data-pose="${p}" aria-label="Акулёнок">
     <img src="img/shark-${p}.png" alt="" draggable="false"></button>`;
+}
+
+// Нажали на акулёнка: подпрыгивает и на секунду корчит рожицу.
+export function mascotTap(el) {
+  const img = el.querySelector('img');
+  const pose = MASCOT_TAP_POSES[Math.floor(Math.random() * MASCOT_TAP_POSES.length)];
+  el.classList.remove('jump', 'shake');
+  void el.offsetWidth;
+  el.classList.add('jump');
+  img.src = `img/shark-${pose}.png`;
+  clearTimeout(el.tapTimer);
+  el.tapTimer = setTimeout(() => { img.src = `img/shark-${el.dataset.pose}.png`; }, 1600);
 }
 
 // Окно снизу. Шапка с «язычком» и крестиком прилипает сверху; окно можно смахнуть вниз.
@@ -97,10 +112,11 @@ export function toast(text, ms = 3000) {
   toastTimer = setTimeout(() => { $toast.innerHTML = ''; }, ms);
 }
 
+// Ошибка в форме — с удивлённым акулёнком (решение пользователя 26.09).
 export function showFormError(id, text, warn = false) {
   const el = document.getElementById(id);
-  el.className = warn ? 'error warn' : 'error';
-  el.textContent = text;
+  el.className = warn ? 'error warn with-face' : 'error with-face';
+  el.innerHTML = `<img class="err-face" src="img/shark-surprised.png" alt=""><span>${esc(text)}</span>`;
 }
 
 export function kv(label, value) {
