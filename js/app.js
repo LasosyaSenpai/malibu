@@ -641,7 +641,19 @@ async function boot() {
   if (!location.hash) history.replaceState(null, '', '#/home');
   render();
   if (state.car) scheduleSync();
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) {
+    // Пришла новая версия приложения — один раз перезагрузиться, чтобы сразу её показать.
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+      .then((reg) => reg.update())
+      .catch(() => {});
+  }
 }
 
 boot().catch((err) => {

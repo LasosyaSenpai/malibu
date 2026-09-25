@@ -2,7 +2,7 @@
 // Сначала пробуем сеть (чтобы сразу получать обновления), при плохой связи — берём из кэша.
 // При изменении файлов приложения поднимать версию CACHE.
 
-const CACHE = 'malibu-v0.3.1';
+const CACHE = 'malibu-v0.3.2';
 const NETWORK_TIMEOUT_MS = 3000;
 const ASSETS = [
   './',
@@ -64,7 +64,10 @@ self.addEventListener('fetch', (event) => {
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     try {
-      const res = await withTimeout(fetch(req), NETWORK_TIMEOUT_MS);
+      // no-cache: не брать файлы из 10-минутного кэша браузера (GitHub Pages), а сверяться с сервером —
+      // иначе обновление приложения приходит с опозданием.
+      const fresh = url.origin === self.location.origin ? new Request(req, { cache: 'no-cache' }) : req;
+      const res = await withTimeout(fetch(fresh), NETWORK_TIMEOUT_MS);
       if (res.ok || res.type === 'opaque') cache.put(req, res.clone());
       return res;
     } catch {
