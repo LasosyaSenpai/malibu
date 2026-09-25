@@ -9,7 +9,25 @@ export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 }[c]));
 
-export const mascot = (cls = '') => `<div class="mascot ${cls}" aria-hidden="true">${icon('paw')}</div>`;
+// Акулёнок-талисман (картинка пользователя от GPT, позы вырезаны в app/img).
+// pose: hero (целиком), main (лицо), calm (спокойный), wink (совет), joy (радость).
+// move: '' | 'shake' (переживает). После «Сделано» следующий показанный талисман прыгает от радости.
+let cheerPending = false;
+export function cheer() {
+  cheerPending = true;
+}
+
+export function mascot(cls = '', pose = 'calm', move = '') {
+  let p = pose;
+  let m = move;
+  if (cheerPending) {
+    cheerPending = false;
+    p = cls.includes('xl') ? p : 'joy';
+    m = 'jump';
+  }
+  return `<button class="mascot ${cls} ${m}" data-action="mascotTap" aria-label="Акулёнок">
+    <img src="img/shark-${p}.png" alt="" draggable="false"></button>`;
+}
 
 // Окно снизу. Шапка с «язычком» и крестиком прилипает сверху; окно можно смахнуть вниз.
 export function sheet(title, body) {

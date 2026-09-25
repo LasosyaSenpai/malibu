@@ -2,7 +2,7 @@
 // Сначала пробуем сеть (чтобы сразу получать обновления), при плохой связи — берём из кэша.
 // При изменении файлов приложения поднимать версию CACHE.
 
-const CACHE = 'malibu-v0.2.1';
+const CACHE = 'malibu-v0.2.2';
 const NETWORK_TIMEOUT_MS = 3000;
 const ASSETS = [
   './',
@@ -19,6 +19,11 @@ const ASSETS = [
   './js/service.js',
   './js/sync.js',
   './js/ui.js',
+  './img/shark-hero.png',
+  './img/shark-main.png',
+  './img/shark-calm.png',
+  './img/shark-wink.png',
+  './img/shark-joy.png',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',

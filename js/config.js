@@ -1,6 +1,6 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.2.1';
+export const APP_VERSION = '0.2.2';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.

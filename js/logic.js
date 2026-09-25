@@ -134,17 +134,22 @@ export function validateCarInput(raw, today, needCurrentKm) {
 
 // Подсказка талисмана на главном экране — самое важное из того, что стоит сделать.
 // lastBackupAt — последний файл-бекап или последняя синхронизация с Google Таблицей (что позже).
+// Возвращает { text, mood }: mood — настроение талисмана (wink — совет, calm — всё хорошо).
 export function pickTip({ latest, lastBackupAt, today }) {
-  if (!lastBackupAt) return 'Подключи Google Таблицу в разделе «Ещё» — так твои записи точно не потеряются';
+  if (!lastBackupAt) {
+    return { text: 'Подключи Google Таблицу в разделе «Ещё» — так твои записи точно не потеряются', mood: 'wink' };
+  }
   const sinceExport = daysBetween(todayIso(new Date(lastBackupAt)), today);
   if (sinceExport > TIP_EXPORT_DAYS) {
-    return `Последний бекап был ${sinceExport} ${plural(sinceExport, DAYS)} назад — пора обновить`;
+    return { text: `Последний бекап был ${sinceExport} ${plural(sinceExport, DAYS)} назад — пора обновить`, mood: 'wink' };
   }
   if (latest) {
     const sinceKm = daysBetween(latest.date, today);
-    if (sinceKm > TIP_KM_DAYS) return `Обнови пробег — последний раз ${sinceKm} ${plural(sinceKm, DAYS)} назад`;
+    if (sinceKm > TIP_KM_DAYS) {
+      return { text: `Обнови пробег — последний раз ${sinceKm} ${plural(sinceKm, DAYS)} назад`, mood: 'wink' };
+    }
   }
-  return 'Всё записано. Хорошей дороги!';
+  return { text: 'Всё записано. Хорошей дороги!', mood: 'calm' };
 }
 
 export function buildBackup(data, nowIso) {

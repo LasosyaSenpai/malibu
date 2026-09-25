@@ -83,12 +83,18 @@ b, .strong { font-weight: 600; }
 
 /* Талисман (пока заглушка-лапка) */
 .mascot {
-  width: 46px; height: 46px; flex: none;
-  border-radius: 50%; background: var(--navy); border: 2px solid var(--chrome); color: var(--chrome);
-  display: grid; place-items: center;
+  width: 52px; height: 52px; flex: none; padding: 0; cursor: pointer;
+  border-radius: 50%; background: #EEF1FA; border: 2px solid var(--chrome); overflow: hidden;
+  animation: bob 3.2s ease-in-out infinite;
 }
-.mascot .ic { width: 58%; height: 58%; }
-.mascot.xl { width: 128px; height: 128px; border-width: 3px; box-shadow: 0 0 0 10px var(--accent-soft); }
+.mascot img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; user-select: none; -webkit-user-select: none; }
+.mascot.xl { width: 170px; height: 170px; border-width: 3px; box-shadow: 0 0 0 10px var(--accent-soft); }
+.mascot.jump { animation: jump .8s ease-out, bob 3.2s ease-in-out .8s infinite; }
+.mascot.shake { animation: shake .6s ease-in-out .3s 2, bob 3.2s ease-in-out 1.5s infinite; }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes jump { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-16px) scale(1.08); } 65% { transform: translateY(2px) scale(.97); } 100% { transform: translateY(0) scale(1); } }
+@keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) { .mascot, .mascot.jump, .mascot.shake { animation: none; } }
 .hello { display: flex; align-items: flex-end; gap: 10px; }
 .bubble { background: var(--accent-soft); border-radius: 16px 16px 16px 4px; padding: 9px 12px; font-size: 13px; line-height: 1.35; }
 

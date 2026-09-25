@@ -160,7 +160,7 @@ function progress(step) {
 function onboardingView() {
   if (state.step === 1) {
     return `<div class="welcome">
-      ${mascot('xl')}
+      ${mascot('xl', 'hero')}
       <h1>Привет!<br>Я — твоя Malibu</h1>
       <p class="muted">Буду помнить про масло, ТО и расходы, чтобы тебе не приходилось</p>
     </div>
@@ -176,7 +176,7 @@ function onboardingView() {
   }
   return `${progress(3)}
     <div class="title-row"><button class="icon-btn" data-action="onbBack" aria-label="Назад">${icon('back')}</button><h1>Бекап</h1></div>
-    <div class="hello">${mascot()}<div class="bubble">Подключи бекап — тогда я ничего не забуду, даже если потеряешь телефон</div></div>
+    <div class="hello">${mascot('', 'wink')}<div class="bubble">Подключи бекап — тогда я ничего не забуду, даже если потеряешь телефон</div></div>
     <section class="card stack">
       <div class="list-row plain">${icon('table', 'green')}<div class="grow"><div class="strong">Google Таблица</div>
         <div class="muted">автосохранение после каждой записи</div></div>
@@ -200,7 +200,7 @@ function homeView() {
   const backups = [state.meta.lastExportAt, state.meta.lastSyncAt].filter(Boolean).sort();
   const tip = L.pickTip({ latest, lastBackupAt: backups.pop() || null, today });
   return `
-    <div class="hello">${mascot()}<div class="bubble">${esc(tip)}</div></div>
+    <div class="hello">${mascot('', tip.mood)}<div class="bubble">${esc(tip.text)}</div></div>
     <section class="card hero">
       <div class="car-line">${esc(c.make)} ${esc(c.model)} · ${esc(c.year)} · ${esc(c.engine)}
         <span class="heart">${icon('heart')}</span></div>
@@ -590,6 +590,13 @@ const actions = {
   closeSheet(el, e) {
     if (el.classList.contains('sheet-backdrop') && e.target !== el) return;
     closeSheet();
+  },
+
+  // Нажали на акулёнка — подпрыгивает.
+  mascotTap(el) {
+    el.classList.remove('jump', 'shake');
+    void el.offsetWidth;
+    el.classList.add('jump');
   },
 
   ...service.actions,

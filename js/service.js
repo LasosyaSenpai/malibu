@@ -6,7 +6,7 @@ import * as L from './logic.js';
 import * as M from './maintenance.js';
 import { CATEGORIES, NODES } from './config.js';
 import { icon } from './icons.js';
-import { clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
+import { cheer, clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
 
 const TABS = [
   ['overview', 'Обзор'], ['nodes', 'Узлы'], ['history', 'История'], ['plans', 'Планы'], ['parts', 'Расходники'],
@@ -62,8 +62,11 @@ export function createService(ctx) {
     const bubble = soon.length
       ? `${soon.length} ${L.plural(soon.length, CASES)} ждут — многое можно сделать за один визит на СТО`
       : 'По регламенту всё в порядке. Хорошей дороги!';
+    // Есть срочное — переживает; есть «скоро» — подмигивает с советом; всё хорошо — спокоен.
+    const urgent = soon.some((i) => i.level === 'bad');
+    const face = urgent ? mascot('', 'main', 'shake') : mascot('', soon.length ? 'wink' : 'calm');
     return `${chips('overview')}
-      <div class="hello">${mascot()}<div class="bubble">${esc(bubble)}</div></div>
+      <div class="hello">${face}<div class="bubble">${esc(bubble)}</div></div>
       ${soon.length ? `<div class="sec">Скоро пора · ${soon.length}</div>
         <section class="card lines">${soon.map((i) => dotLine(i.level, i.title, i.label, soonHref(i))).join('')}</section>` : ''}
       <div class="sec">Ближайшая замена масла</div>
@@ -288,9 +291,10 @@ export function createService(ctx) {
   const val = (id) => document.getElementById(id)?.value ?? '';
   const find = (list, id) => list.find((x) => x.id === id) || null;
 
-  async function done(message) {
+  async function done(message, { happy = false } = {}) {
     clearSheet();
     toast(message);
+    if (happy) cheer();
     await ctx.afterChange();
   }
 
@@ -334,7 +338,7 @@ export function createService(ctx) {
       }
       const plan = find(state.plans, el.dataset.plan);
       if (plan) await db.put('plans', { ...plan, done: true, doneWorkId: saved.id });
-      await done(plan ? 'Сделано — план перенесён в историю' : 'Работа сохранена');
+      await done(plan ? 'Сделано — план перенесён в историю' : 'Работа сохранена', { happy: !existing });
     },
 
     async deleteWork(el) {
