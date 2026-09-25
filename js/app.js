@@ -113,10 +113,10 @@ function closeSheet() {
 }
 
 let toastTimer = null;
-function toast(text) {
+function toast(text, ms = 3000) {
   $toast.innerHTML = `<div class="toast">${esc(text)}</div>`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { $toast.innerHTML = ''; }, 3000);
+  toastTimer = setTimeout(() => { $toast.innerHTML = ''; }, ms);
 }
 
 const importInput = () => '<input type="file" accept=".json,application/json" hidden data-change="importFile">';
@@ -458,7 +458,16 @@ const actions = {
     closeSheet();
     if (el.dataset.restore) {
       toast('Подключено, забираю данные…');
-      await runSync();
+      // Здесь синхронизация идёт напрямую, чтобы показать настоящую ошибку, а не «нет данных».
+      try {
+        const res = await syncNow(state.meta.syncUrl, null);
+        await saveMeta({ lastSyncAt: res.startedAt });
+        state.sync.error = '';
+        await load();
+      } catch (err) {
+        toast(`Не получилось забрать данные: ${err.message}. Попробуй ещё раз`, 10000);
+        return;
+      }
       if (state.car) {
         state.onboarding = false;
         location.hash = '#/home';

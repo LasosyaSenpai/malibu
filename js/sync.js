@@ -17,8 +17,9 @@ async function call(url, body) {
       body: JSON.stringify(body),
       signal: ctrl.signal,
     });
-  } catch {
-    throw new Error(SYNC_ERRORS.network);
+  } catch (err) {
+    console.warn('sync fetch failed', err);
+    throw new Error(`${SYNC_ERRORS.network} (${err.name || 'ошибка'})`);
   } finally {
     clearTimeout(timer);
   }
@@ -45,6 +46,11 @@ export async function syncNow(url, lastSyncAt) {
   const records = L.recordsToPush(local, lastSyncAt);
   const out = await call(url, { action: 'sync', records });
   const plan = L.planMerge(await localBackupData(), out.data || {});
-  await applyPlan(plan);
+  try {
+    await applyPlan(plan);
+  } catch (err) {
+    console.warn('sync apply failed', err);
+    throw new Error(`не удалось сохранить на телефоне (${err.name || err.message})`);
+  }
   return { pushed: records.length, pulled: plan.added + plan.updated, startedAt };
 }
