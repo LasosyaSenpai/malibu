@@ -1,16 +1,19 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.4.2';
+export const APP_VERSION = '0.5.0';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.
 export const DB_NAME = 'malibu-assistant';
-export const DB_VERSION = 4;
-export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays'];
+export const DB_VERSION = 5;
+export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays', 'photos'];
 
 // Что попадает в файл-бекап и в Google Таблицу. `meta` — настройки этого телефона, туда не идут.
 // `settings` — общие настройки (домашняя парковка), `parkingDays` — дни, отмеченные в календаре парковки.
 export const BACKUP_STORES = ['car', 'odometer', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays'];
+// Только в файле-бекапе: фото слишком большие для Google Таблицы (решение 26.09).
+export const FILE_ONLY_STORES = ['photos'];
+export const FILE_BACKUP_STORES = [...BACKUP_STORES, ...FILE_ONLY_STORES];
 export const BACKUP_VERSION = 1;
 
 // Подставляется в форму при первом запуске. Личных данных (VIN и т.п.) здесь быть не должно — код публичный.
@@ -138,6 +141,15 @@ export const EXPENSE_CATEGORIES = [
   { key: 'care', label: 'Уход', icon: 'sparkles' },
   { key: 'other', label: 'Другое', icon: 'box' },
 ];
+
+// ---------- Фото «Моя Malibu» и PDF сервисной книжки (решения 26.09) ----------
+
+// Фото уменьшаются на телефоне перед сохранением (хранятся в IndexedDB и файле-бекапе).
+export const PHOTO_MAX_SIDE = 1600;
+export const PHOTO_JPEG_QUALITY = 0.82;
+// Библиотека PDF и шрифт с кириллицей лежат в приложении — выгрузка работает без интернета.
+export const PDF_LIBS = ['vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js'];
+export const PDF_FONTS = { normal: 'vendor/Montserrat-Regular.ttf', bold: 'vendor/Montserrat-SemiBold.ttf' };
 
 // Домашняя парковка (решение 26.09): платно каждые сутки, кроме ночей «не дома». Итог — одной строкой на месяц.
 export const HOME_PARKING_CATEGORY = { key: 'homeParking', label: 'Парковка у дома', icon: 'home' };

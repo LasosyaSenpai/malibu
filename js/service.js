@@ -7,6 +7,9 @@ import * as M from './maintenance.js';
 import { CATEGORIES, NODES } from './config.js';
 import { icon } from './icons.js';
 import { celebrate, clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
+import { serviceBookData } from './servicebook.js';
+import { preparePdf, serviceBookPdf } from './pdf.js';
+import { saveFile } from './backup.js';
 
 const TABS = [
   ['overview', 'Обзор'], ['nodes', 'Узлы'], ['history', 'История'], ['plans', 'Планы'], ['parts', 'Расходники'],
@@ -108,6 +111,7 @@ export function createService(ctx) {
       <section class="card">
         <div class="row-between"><div><div class="muted">С покупки на обслуживание</div><div class="big-sum">${M.formatMoney(total)}</div></div>
           <button class="btn outline small auto" data-action="newWork">${icon('plus')} Работа</button></div>
+        <button class="btn link small" data-action="openServiceBook">${icon('file')} Сервисная книжка (PDF)</button>
         ${total ? `<div class="share">${parts.map((c, i) => `<i style="flex:${c.total};background:${SHARE_COLORS[i]}"></i>`).join('')}</div>
         <div class="legend">${parts.map((c, i) => `<span><i style="background:${SHARE_COLORS[i]}"></i>${esc(c.label || M.categoryOf(c.key).label)} ${M.formatMoney(c.total)}</span>`).join('')}</div>` : ''}
       </section>
@@ -294,6 +298,39 @@ export function createService(ctx) {
       ${s.id ? `<button class="btn link danger" data-action="deleteStock" data-id="${v(s.id)}">Использовано — убрать</button>` : ''}`);
   }
 
+  // Выгрузка «сервисной книжки» (решение 26.09: строгий PDF). Перед сохранением — что показывать.
+  function serviceBookSheet() {
+    const cover = state.photos.find((p) => p.cover);
+    const sw = (id, label, on) => `<label class="switch-row"><span>${label}</span><input type="checkbox" class="switch" id="${id}" ${on ? 'checked' : ''}></label>`;
+    return sheet('Сервисная книжка (PDF)', `
+      <p class="muted">Все работы по датам, итог и последние замены — удобно покупателю и мастеру. Для покупателя можно выключить суммы и заметки.</p>
+      ${sw('pdf-sums', 'Суммы (цены работ)', true)}
+      ${sw('pdf-vin', 'VIN', true)}
+      ${sw('pdf-shop', 'СТО / мастер', true)}
+      ${sw('pdf-notes', 'Мои заметки', false)}
+      ${cover ? sw('pdf-photo', 'Фото машины (обложка из «Моя Malibu»)', true) : ''}
+      <p class="error" id="pdf-error" role="alert"></p>
+      <button class="btn primary" id="pdf-save" data-action="savePdf">${icon('file')} Сохранить PDF</button>`);
+  }
+
+  async function sharePdf(file) {
+    const btn = document.getElementById('pdf-save');
+    try {
+      if (!(await saveFile(file))) return;
+      state.pdfFile = null;
+      clearSheet();
+      toast('PDF сохранён');
+    } catch (err) {
+      // Пока готовился PDF, айфон «забыл» нажатие — просим нажать ещё раз, файл уже готов.
+      if (err.name === 'NotAllowedError' && btn) {
+        state.pdfFile = file;
+        btn.textContent = 'Готово — нажми, чтобы сохранить';
+        return;
+      }
+      showFormError('pdf-error', `Не получилось сохранить: ${err.message}`);
+    }
+  }
+
   const val = (id) => document.getElementById(id)?.value ?? '';
   const find = (list, id) => list.find((x) => x.id === id) || null;
 
@@ -308,6 +345,32 @@ export function createService(ctx) {
   // ---------- Действия ----------
 
   const actions = {
+    openServiceBook() {
+      state.pdfFile = null;
+      openSheet(serviceBookSheet());
+      preparePdf().catch(() => {});
+    },
+
+    async savePdf() {
+      if (state.pdfFile) { await sharePdf(state.pdfFile); return; }
+      const checked = (id) => Boolean(document.getElementById(id)?.checked);
+      const opts = { sums: checked('pdf-sums'), vin: checked('pdf-vin'), shop: checked('pdf-shop'), notes: checked('pdf-notes') };
+      const btn = document.getElementById('pdf-save');
+      btn.textContent = 'Готовлю PDF…';
+      const cover = checked('pdf-photo') ? state.photos.find((p) => p.cover) : null;
+      let file;
+      try {
+        const data = serviceBookData({ car: state.car, works: state.works, currentKm: ctx.currentKm(), today: today() }, opts);
+        file = await serviceBookPdf(data, { photo: cover ? cover.data : null, sums: opts.sums });
+      } catch (err) {
+        btn.innerHTML = `${icon('file')} Сохранить PDF`;
+        showFormError('pdf-error', `Не получилось сделать PDF: ${err.message}`);
+        return;
+      }
+      btn.innerHTML = `${icon('file')} Сохранить PDF`;
+      await sharePdf(file);
+    },
+
     newWork() { openSheet(workForm({}, { km: L.formatKm(ctx.currentKm()) })); },
 
     editWork(el) {

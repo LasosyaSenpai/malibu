@@ -2,21 +2,25 @@
 
 import * as db from './db.js';
 import * as L from './logic.js';
-import { BACKUP_STORES } from './config.js';
+import { BACKUP_STORES, FILE_BACKUP_STORES } from './config.js';
 
-export async function localBackupData() {
+// stores: для Google Таблицы — BACKUP_STORES, для файла-бекапа — FILE_BACKUP_STORES (с фото).
+export async function localBackupData(stores = BACKUP_STORES) {
   const data = {};
-  for (const store of BACKUP_STORES) data[store] = await db.getAllRaw(store);
+  for (const store of stores) data[store] = await db.getAllRaw(store);
   return data;
+}
+
+export async function exportBackup() {
+  const backup = L.buildBackup(await localBackupData(FILE_BACKUP_STORES), new Date().toISOString());
+  const name = `malibu-backup-${L.todayIso()}.json`;
+  return saveFile(new File([JSON.stringify(backup, null, 2)], name, { type: 'application/json' }));
 }
 
 // На телефоне открывает меню «Поделиться» (там есть «Сохранить в Файлы»), на компьютере — скачивает файл.
 // Возвращает false, если пользователь закрыл меню, ничего не сохранив.
-export async function exportBackup() {
-  const backup = L.buildBackup(await localBackupData(), new Date().toISOString());
-  const name = `malibu-backup-${L.todayIso()}.json`;
-  const file = new File([JSON.stringify(backup, null, 2)], name, { type: 'application/json' });
-
+export async function saveFile(file) {
+  const name = file.name;
   const isPhone = matchMedia('(pointer: coarse)').matches;
   if (isPhone && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {

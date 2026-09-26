@@ -337,6 +337,29 @@ input.switch:focus { box-shadow: none; }
 .card.plain-btn.row-between { display: flex; }
 .pick-btn.day-pick { min-width: 44px; justify-content: center; padding: 0 8px; }
 
+/* Фото «Моя Malibu» */
+a.car-photo { display: block; color: inherit; text-decoration: none; }
+a.list-btn { text-decoration: none; }
+.photo-cover {
+  position: relative; display: block; width: 100%; aspect-ratio: 4 / 3; border-radius: 20px;
+  background: var(--navy) center / cover no-repeat; overflow: hidden;
+}
+.photo-cap {
+  position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; border-radius: 999px;
+  background: rgba(15, 20, 40, .55); color: #FFFFFF; font-size: 12px; font-weight: 600;
+}
+.photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.photo-tile { aspect-ratio: 1; border-radius: 12px; background: var(--line) center / cover no-repeat; }
+.photo-add {
+  aspect-ratio: 1; border-radius: 12px; border: 1.5px dashed #CFC7EA; color: var(--accent);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.photo-full { width: 100%; border-radius: 16px; display: block; }
+
+/* Эмблема на вкладке «Главная» */
+.tab .ic.bowtie { width: 34px; height: 24px; padding: 3px 0; }
+
 /* Окно снизу */
 .sheet-backdrop {
   position: fixed; inset: 0; z-index: 10;

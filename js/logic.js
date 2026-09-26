@@ -2,7 +2,7 @@
 // поэтому проверяется тестами в Node.js (tests/logic.test.js).
 
 import {
-  APP_ID, BACKUP_STORES, BACKUP_VERSION, BIG_JUMP_KM, MIN_CAR_YEAR,
+  APP_ID, BACKUP_STORES, BACKUP_VERSION, BIG_JUMP_KM, FILE_BACKUP_STORES, MIN_CAR_YEAR,
   MIN_DAYS_FOR_AVG, SYNC_CODE_PREFIX, TIP_EXPORT_DAYS, TIP_KM_DAYS,
 } from './config.js';
 
@@ -162,7 +162,7 @@ export function validateBackup(obj) {
     return { error: 'Бекап сделан в более новой версии приложения — сначала обнови приложение' };
   }
   if (!obj.data || typeof obj.data !== 'object') return { error: 'В файле нет данных' };
-  for (const store of BACKUP_STORES) {
+  for (const store of FILE_BACKUP_STORES) {
     const list = obj.data[store];
     if (list === undefined) continue;
     if (!Array.isArray(list) || list.some((r) => !r || typeof r.id !== 'string')) {
@@ -196,12 +196,13 @@ export function recordsToPush(local, sinceIso) {
 
 // Слияние бекапа с тем, что уже есть. Ничего не удаляет: новые записи добавляются,
 // существующие заменяются, только если в бекапе версия новее (по updatedAt).
-export function planMerge(local, incoming) {
+// stores: Google Таблица — BACKUP_STORES, файл-бекап — ещё и фото (FILE_BACKUP_STORES).
+export function planMerge(local, incoming, stores = BACKUP_STORES) {
   const toWrite = {};
   let added = 0;
   let updated = 0;
   let unchanged = 0;
-  for (const store of BACKUP_STORES) {
+  for (const store of stores) {
     const byId = new Map((local[store] || []).map((r) => [r.id, r]));
     toWrite[store] = [];
     for (const rec of incoming[store] || []) {

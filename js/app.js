@@ -2,13 +2,14 @@
 
 import * as db from './db.js';
 import * as L from './logic.js';
-import { APP_VERSION, CAR_DEFAULTS, CAR_PHOTO, HOME_PARKING_ID, SLEEPY_DAYS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
+import { APP_VERSION, CAR_DEFAULTS, CAR_PHOTO, FILE_BACKUP_STORES, HOME_PARKING_ID, SLEEPY_DAYS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
 import { applyPlan, exportBackup, localBackupData, readBackupFile } from './backup.js';
 import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
 import { clearSheet, esc, kv, mascot, mascotTap, openSheet, setSheetCloser, sheet, showFormError, toast } from './ui.js';
 import { createService } from './service.js';
 import { createExpenses } from './expenses.js';
+import { createPhotos } from './photos.js';
 
 const $app = document.getElementById('app');
 
@@ -23,6 +24,7 @@ const state = {
   expenses: [],
   parkingSettings: null,
   parkingDays: [],
+  photos: [],
   meta: { id: 'meta' },
   onboarding: false,
   step: 1,
@@ -43,6 +45,7 @@ async function load() {
   state.expenses = await db.getAll('expenses');
   state.parkingSettings = await db.get('settings', HOME_PARKING_ID);
   state.parkingDays = await db.getAll('parkingDays');
+  state.photos = await db.getAll('photos');
   state.meta = (await db.get('meta', 'meta')) || { id: 'meta' };
 }
 
@@ -126,6 +129,7 @@ setSheetCloser(closeSheet);
 
 const service = createService({ state, currentKm: () => currentReading().km, afterChange });
 const expenses = createExpenses({ state, currentKm: () => currentReading().km, afterChange });
+const photos = createPhotos({ state, afterChange, saveMeta });
 
 const importInput = () => '<input type="file" accept=".json,application/json" hidden data-change="importFile">';
 
@@ -211,15 +215,16 @@ function homeView() {
   const backups = [state.meta.lastExportAt, state.meta.lastSyncAt].filter(Boolean).sort();
   const tip = L.pickTip({ latest, lastBackupAt: backups.pop() || null, today });
   // Шапка — фото Malibu с пробегом (решение 26.09), акулёнок — только ниже, у напоминания.
+  // Своё фото из «Моя Malibu» — если включено «Обложка на главной». Нажатие — страница с фото.
   return `
-    <section class="car-photo" style="background-image:url(${CAR_PHOTO})">
+    <a class="car-photo" href="#/more/photos" style="background-image:url('${photos.homePhoto() || CAR_PHOTO}')">
       <div class="car-shade"></div>
       <div class="car-info">
         <div class="car-line">${esc(c.make)} ${esc(c.model)} · ${esc(c.year)} · ${esc(c.engine)} <span class="heart">${icon('heart')}</span></div>
         <div class="km-big">${L.formatKm(latest.km)} <small>км</small></div>
         <div class="car-date">обновлено ${L.formatDate(latest.date)}</div>
       </div>
-    </section>
+    </a>
     <button class="btn outline small" data-action="openKm">${icon('gauge')} Обновить пробег</button>
     ${state.sleepyDays
     ? `<div class="hello">${mascot('', 'sleepy')}<div class="bubble">Давно не виделись — ${state.sleepyDays} ${L.plural(state.sleepyDays, L.DAYS)}! Обнови пробег, и я проверю, не пора ли что-то менять</div></div>`
@@ -249,6 +254,9 @@ function moreView() {
       ${kv('VIN', c.vin || '—')}
       ${kv('Куплена', `${L.formatDate(c.purchaseDate)} · ${L.formatKm(c.purchaseKm)} км`)}
     </section>
+    <a class="list-btn" href="#/more/photos">${icon('camera', 'accent')}<span class="grow">Моя Malibu — фото</span>
+      <span class="muted">${state.photos.length || ''}</span>${icon('chevron')}</a>
+    <button class="list-btn" data-action="openServiceBook">${icon('file', 'accent')}<span class="grow">Сервисная книжка (PDF)</span>${icon('chevron')}</button>
     <section class="card stack">
       <h2>Бекап</h2>
       <div class="list-row plain">${icon('table', 'green')}<div class="grow"><div class="strong">Google Таблица</div>
@@ -280,10 +288,18 @@ function moreView() {
     <p class="muted center-text">Malibu Assistant · версия ${APP_VERSION}</p>`;
 }
 
+// Эмблема Chevrolet на вкладке «Главная» (решение 26.09): активная — золотая, иначе — контуром.
+function bowtie(active) {
+  return `<svg class="ic bowtie" viewBox="0 0 48 24" aria-hidden="true">
+    ${active ? '<defs><linearGradient id="bt-gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7DC7A"/><stop offset=".55" stop-color="#E0B43F"/><stop offset="1" stop-color="#B8862A"/></linearGradient></defs>' : ''}
+    <path d="M4 8h13l2-5h12l-2 5h17l-4 8H29l-2 5H15l2-5H0z" fill="${active ? 'url(#bt-gold)' : 'none'}"
+      stroke="${active ? '#8A6420' : 'currentColor'}" stroke-width="${active ? 1.4 : 2.4}" stroke-linejoin="round"/></svg>`;
+}
+
 function tabbar(route) {
   const tab = (id, ic, label) => `<a href="#/${id}" class="tab ${route === id ? 'on' : ''}">${icon(ic)}<span>${label}</span></a>`;
   return `<nav class="tabbar">
-    ${tab('home', 'home', 'Главная')}
+    <a href="#/home" class="tab ${route === 'home' ? 'on' : ''}">${bowtie(route === 'home')}<span>Главная</span></a>
     ${tab('service', 'tool', 'ТО')}
     <button class="tab-plus" data-action="openAdd" aria-label="Добавить">${icon('plus')}</button>
     ${tab('expenses', 'wallet', 'Расходы')}
@@ -302,7 +318,7 @@ function render() {
     home: homeView,
     service: () => service.view(rest.join('/')),
     expenses: () => expenses.view(rest.join('/')),
-    more: moreView,
+    more: () => (rest[0] === 'photos' ? photos.view() : moreView()),
   };
   $app.innerHTML = `<main class="screen">${(views[route] || homeView)()}</main>${tabbar(route)}`;
 }
@@ -385,7 +401,7 @@ async function handleImportFile(file) {
   if (!file) return;
   try {
     const backup = await readBackupFile(file);
-    const plan = L.planMerge(await localBackupData(), backup.data);
+    const plan = L.planMerge(await localBackupData(FILE_BACKUP_STORES), backup.data, FILE_BACKUP_STORES);
     openSheet(importSheet(backup, plan));
     state.pendingImport = plan;
   } catch (err) {
@@ -604,6 +620,7 @@ const actions = {
 
   ...service.actions,
   ...expenses.actions,
+  ...photos.actions,
 };
 
 document.addEventListener('click', (e) => {
@@ -614,6 +631,10 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
   if (e.target.dataset.change === 'importFile') {
     handleImportFile(e.target.files[0]);
+    e.target.value = '';
+  }
+  if (e.target.dataset.change === 'addPhotos') {
+    photos.addFiles([...e.target.files]);
     e.target.value = '';
   }
 });
