@@ -8,6 +8,7 @@ import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
 import { clearSheet, esc, kv, mascot, mascotTap, openSheet, setSheetCloser, sheet, showFormError, toast } from './ui.js';
 import { createService } from './service.js';
+import { createExpenses } from './expenses.js';
 
 const $app = document.getElementById('app');
 
@@ -18,6 +19,8 @@ const state = {
   plans: [],
   parts: [],
   stock: [],
+  fuel: [],
+  expenses: [],
   meta: { id: 'meta' },
   onboarding: false,
   step: 1,
@@ -34,6 +37,8 @@ async function load() {
   state.plans = await db.getAll('plans');
   state.parts = await db.getAll('parts');
   state.stock = await db.getAll('stock');
+  state.fuel = await db.getAll('fuel');
+  state.expenses = await db.getAll('expenses');
   state.meta = (await db.get('meta', 'meta')) || { id: 'meta' };
 }
 
@@ -116,6 +121,7 @@ function closeSheet() {
 setSheetCloser(closeSheet);
 
 const service = createService({ state, currentKm: () => currentReading().km, afterChange });
+const expenses = createExpenses({ state, currentKm: () => currentReading().km, afterChange });
 
 const importInput = () => '<input type="file" accept=".json,application/json" hidden data-change="importFile">';
 
@@ -224,11 +230,6 @@ function homeView() {
     ${service.homeCard()}`;
 }
 
-function soonView(title, text) {
-  return `<h1>${title}</h1>
-    <section class="card soon">${mascot('', 'lick')}<div><h2>Скоро</h2><p class="muted">${text}</p></div></section>`;
-}
-
 function moreView() {
   const c = state.car;
   const exp = state.meta.lastExportAt;
@@ -296,7 +297,7 @@ function render() {
   const views = {
     home: homeView,
     service: () => service.view(rest.join('/')),
-    expenses: () => soonView('Расходы', 'Заправки, ремонт, мойка, парковки и страховка — с итогами по месяцам и стоимостью 1 км.'),
+    expenses: () => expenses.view(rest.join('/')),
     more: moreView,
   };
   $app.innerHTML = `<main class="screen">${(views[route] || homeView)()}</main>${tabbar(route)}`;
@@ -333,15 +334,13 @@ function editReadingSheet(r) {
 }
 
 function addSheet() {
-  const soonRow = (ic, label, msg) => `<button class="list-btn" data-action="soon" data-msg="${msg}">
-    ${icon(ic, 'accent')}<span class="grow">${label}</span><span class="tag">скоро</span></button>`;
   const row = (action, ic, label) => `<button class="list-btn" data-action="${action}">${icon(ic, 'accent')}<span class="grow">${label}</span>${icon('chevron')}</button>`;
   return sheet('Добавить', `
+    ${row('newFuel', 'fuel', 'Заправка')}
+    ${row('newExpense', 'wallet', 'Расход')}
     ${row('addKm', 'gauge', 'Пробег')}
     ${row('newWork', 'tool', 'Работа на СТО')}
-    ${row('editPlan', 'list', 'План')}
-    ${soonRow('fuel', 'Заправка', 'Заправки появятся на этапе «Расходы»')}
-    ${soonRow('wallet', 'Расход', 'Расходы появятся на этапе «Расходы»')}`);
+    ${row('editPlan', 'list', 'План')}`);
 }
 
 // restore: подключение на новом телефоне — после подключения сразу забираем данные.
@@ -484,7 +483,6 @@ const actions = {
     toast('Отключено. Данные в Таблице и на телефоне остались');
     render();
   },
-  soon(el) { toast(el.dataset.msg); },
 
   openAdd() { openSheet(addSheet()); },
   addKm() { actions.openKm(); },
@@ -601,6 +599,7 @@ const actions = {
   mascotTap(el) { mascotTap(el); },
 
   ...service.actions,
+  ...expenses.actions,
 };
 
 document.addEventListener('click', (e) => {
@@ -614,6 +613,8 @@ document.addEventListener('change', (e) => {
     e.target.value = '';
   }
 });
+
+document.addEventListener('input', (e) => expenses.onInput(e));
 
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;

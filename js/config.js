@@ -1,15 +1,15 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.3.3';
+export const APP_VERSION = '0.4.0';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.
 export const DB_NAME = 'malibu-assistant';
-export const DB_VERSION = 2;
-export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock'];
+export const DB_VERSION = 3;
+export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses'];
 
 // Что попадает в файл-бекап и в Google Таблицу. `meta` — настройки этого телефона, туда не идут.
-export const BACKUP_STORES = ['car', 'odometer', 'works', 'plans', 'parts', 'stock'];
+export const BACKUP_STORES = ['car', 'odometer', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses'];
 export const BACKUP_VERSION = 1;
 
 // Подставляется в форму при первом запуске. Личных данных (VIN и т.п.) здесь быть не должно — код публичный.
@@ -47,6 +47,7 @@ export const SOURCE_LABELS = {
   purchase: 'при покупке',
   manual: 'вручную',
   work: 'из работы',
+  fuel: 'из заправки',
 };
 
 // ---------- Обслуживание ----------
@@ -104,3 +105,41 @@ export const TIRE_SEASONS = [
 
 export const NODE_WARN_SHARE = 0.85; // «скоро пора», когда израсходовано 85% интервала
 export const CHECK_FRESH_MONTHS = 12; // «проверено» считается свежим год
+
+// ---------- Расходы и заправки (решения 26.09: обзор-кольцо, быстрая форма заправки) ----------
+
+// Бак Malibu 2016 1.5T — 15,8 галлона ≈ 60 л. Нужен только для проверки: больше не поместится.
+export const TANK_LITERS = 60;
+export const TANK_SLACK_LITERS = 2; // горловина и погрешность колонки
+// Цена за литр вне этих рамок — скорее всего, перепутаны литры и сумма.
+export const FUEL_PRICE_MIN = 20;
+export const FUEL_PRICE_MAX = 150;
+// АЗС кнопками. Свои названия («Другая») запоминаются и тоже становятся кнопками.
+export const FUEL_STATIONS = ['OKKO', 'WOG', 'SOCAR', 'UPG', 'BRSM'];
+export const FUEL_TYPES = ['А-92', 'А-95', 'А-95 премиум'];
+export const FUEL_TYPE_DEFAULT = 'А-95';
+// Расход «полный бак → полный бак». Отрезок вне рамок или сильно не как обычно — подсвечивается
+// и не входит в средний (скорее всего, пропущена заправка или бак был не полный).
+export const FUEL_L100_MIN = 4;
+export const FUEL_L100_MAX = 25;
+export const FUEL_ODD_SHARE = 0.3; // отклонение от обычного больше чем на 30%
+export const FUEL_ODD_MIN_SEGMENTS = 3; // сравнивать с обычным, когда отрезков хотя бы столько
+
+// Категории расходов. Топливо и «ТО и ремонт» собираются сами — из заправок и работ на СТО.
+export const FUEL_CATEGORY = { key: 'fuel', label: 'Топливо', icon: 'fuel' };
+export const SERVICE_CATEGORY = { key: 'service', label: 'ТО и ремонт', icon: 'tool' };
+export const EXPENSE_CATEGORIES = [
+  { key: 'wash', label: 'Мойка', icon: 'droplet' },
+  { key: 'parking', label: 'Парковка', icon: 'parking' },
+  { key: 'insurance', label: 'Страховка', icon: 'shield' },
+  { key: 'fine', label: 'Штраф', icon: 'alert' },
+  { key: 'accessories', label: 'Аксессуары', icon: 'bag' },
+  { key: 'care', label: 'Уход', icon: 'sparkles' },
+  { key: 'other', label: 'Другое', icon: 'box' },
+];
+
+// «Проехала за месяц»: запись пробега до начала месяца берём за точку отсчёта, только если она не старше.
+export const MONTH_KM_BASE_DAYS = 7;
+
+export const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+export const MONTHS_IN = ['январе', 'феврале', 'марте', 'апреле', 'мае', 'июне', 'июле', 'августе', 'сентябре', 'октябре', 'ноябре', 'декабре'];

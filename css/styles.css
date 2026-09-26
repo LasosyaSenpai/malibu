@@ -272,6 +272,55 @@ select {
   background: var(--card); border: 1px solid var(--line); border-radius: 12px; -webkit-appearance: none; appearance: none;
 }
 
+/* Расходы */
+.hidden { display: none !important; }
+.chips.small a { padding: 6px 12px; font-size: 12px; }
+.month-nav { display: flex; align-items: center; justify-content: space-between; font-size: 15px; }
+.month-nav .icon-btn { margin: 0; color: var(--accent); text-decoration: none; }
+.month-nav .icon-btn.off { color: var(--line); cursor: default; }
+.icon-btn.flip .ic { transform: scaleX(-1); }
+.ring-card { display: flex; align-items: center; gap: 14px; }
+.ring { width: 132px; height: 132px; flex: none; }
+.ring-cap { font-size: 11px; fill: var(--muted); font-family: inherit; }
+.ring-sum { font-size: 17px; font-weight: 600; fill: var(--text); font-family: inherit; }
+.ring-row { padding: 3px 0; font-size: 13px; }
+.ring-lbl { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+.ring-lbl i { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.row > .btn.small { flex: 1; }
+.fill .node-head { gap: 10px; }
+.fill-foot { margin-top: 6px; }
+.cons { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #E3F4F4; color: var(--ok-text); white-space: nowrap; }
+.cons.part { background: #F1EFF7; color: var(--muted); }
+.cons.odd { background: #FBF1E1; color: var(--warn-text); }
+button.line.plain-btn { display: flex; padding: 8px 0; }
+button.line { width: 100%; border-left: 0; border-right: 0; border-top: 0; border-bottom: 1px solid var(--line); background: none; }
+button.line:last-child { border-bottom: 0; }
+.lines .line .ic-box { width: 32px; height: 32px; border-radius: 10px; }
+.pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.pick-btn {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 38px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--card);
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer;
+}
+.pick-btn .ic { width: 16px; height: 16px; color: var(--accent); }
+.pick-btn.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-press); }
+.big-input input { font-size: 24px; font-weight: 600; min-height: 56px; }
+.switch-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+}
+input.switch {
+  -webkit-appearance: none; appearance: none; flex: none; width: 50px; min-width: 50px; min-height: 0; height: 30px; padding: 0;
+  border: 0; border-radius: 15px; background: #D5D0E6; position: relative; cursor: pointer; transition: background .2s;
+}
+input.switch::after {
+  content: ''; position: absolute; left: 3px; top: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #FFFFFF; box-shadow: 0 1px 3px rgba(27, 35, 69, .25); transition: transform .2s;
+}
+input.switch:checked { background: var(--accent); }
+input.switch:checked::after { transform: translateX(20px); }
+input.switch:focus { box-shadow: none; }
+
 /* Окно снизу */
 .sheet-backdrop {
   position: fixed; inset: 0; z-index: 10;

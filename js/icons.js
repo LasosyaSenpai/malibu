@@ -33,6 +33,10 @@ const PATHS = {
   link: '<path d="M12 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6M11 13l9-9M15 4h5v5"/>',
   list: '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="2"/><path d="M9 12h6M9 16h4"/>',
   back: '<path d="M15 6l-6 6 6 6"/>',
+  parking: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 16V8h4a2 2 0 0 1 0 4H9"/>',
+  shield: '<path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3"/>',
+  alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.24 3.96 2.39 17.07a2 2 0 0 0 1.71 3h15.8a2 2 0 0 0 1.71-3L13.76 3.96a2 2 0 0 0-3.52 0z"/>',
+  bag: '<path d="M6.33 8h11.34a2 2 0 0 1 1.98 2.22l-1.04 8A2 2 0 0 1 16.62 20H7.38a2 2 0 0 1-1.99-1.78l-1.04-8A2 2 0 0 1 6.33 8z"/><path d="M9 11V6a3 3 0 0 1 6 0v5"/>',
 };
 
 export function icon(name, cls = '') {

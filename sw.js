@@ -2,7 +2,7 @@
 // Сначала пробуем сеть (чтобы сразу получать обновления), при плохой связи — берём из кэша.
 // При изменении файлов приложения поднимать версию CACHE.
 
-const CACHE = 'malibu-v0.3.3';
+const CACHE = 'malibu-v0.4.0';
 const NETWORK_TIMEOUT_MS = 3000;
 const ASSETS = [
   './',
@@ -12,7 +12,9 @@ const ASSETS = [
   './js/app.js',
   './js/backup.js',
   './js/config.js',
+  './js/costs.js',
   './js/db.js',
+  './js/expenses.js',
   './js/icons.js',
   './js/logic.js',
   './js/maintenance.js',
