@@ -10,7 +10,7 @@ import {
   EXPENSE_CATEGORIES, FUEL_STATIONS, FUEL_TYPE_DEFAULT, FUEL_TYPES, HOME_PARKING_ID, MONTHS, MONTHS_IN,
 } from './config.js';
 import { icon } from './icons.js';
-import { celebrate, clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
+import { celebrate, clearSheet, confirmTwice, esc, hint, openSheet, sheet, showFormError, toast } from './ui.js';
 
 const TABS = [['overview', 'Обзор'], ['fuel', 'Заправки'], ['all', 'Все расходы']];
 const RING_COLORS = ['#1B2345', '#7C5CD6', '#A993EA', '#D3C8F5', '#E6E1F5'];
@@ -119,7 +119,7 @@ export function createExpenses(ctx) {
     const s = parking();
     const back = `<div class="title-row"><a class="icon-btn" href="#/expenses/overview" aria-label="Назад">${icon('back')}</a><h1>Парковка у дома</h1></div>`;
     if (!s) {
-      return `${back}<div class="hello">${mascot('', 'curious')}<div class="bubble">Скажи цену за сутки и с какого дня считать — дальше посчитаю сама</div></div>
+      return `${back}${hint('Скажи цену за сутки и с какого дня считать — дальше посчитаю сама')}
         <button class="btn primary" data-action="editParking">Настроить</button>`;
     }
     const now = C.monthKey(today());
@@ -167,7 +167,7 @@ export function createExpenses(ctx) {
         <div class="row-between line"><span>Проехала за месяц</span><b>${km ? `~${L.formatKm(km)} км` : '—'}</b></div>
       </section>
       ${parkingCard(month)}
-      <div class="hello">${mascot('', 'lick')}<div class="bubble">${esc(bubble)}</div></div>
+      ${hint(bubble)}
       ${addButtons()}`;
   }
 
@@ -177,7 +177,7 @@ export function createExpenses(ctx) {
     const price = C.avgPrice(state.fuel);
     if (!fills.length) {
       return `${chips('fuel')}
-        <div class="hello">${mascot('', 'curious')}<div class="bubble">Заправок пока нет. Записывай каждую — после двух полных баков посчитаю расход</div></div>
+        ${hint('Заправок пока нет. Записывай каждую — после двух полных баков посчитаю расход')}
         <button class="btn primary" data-action="newFuel">${icon('fuel')} Заправка</button>`;
     }
     return `${chips('fuel')}

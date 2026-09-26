@@ -6,7 +6,7 @@ import * as db from './db.js';
 import * as L from './logic.js';
 import { PHOTO_JPEG_QUALITY, PHOTO_MAX_SIDE } from './config.js';
 import { icon } from './icons.js';
-import { clearSheet, confirmTwice, esc, mascot, openSheet, sheet, toast } from './ui.js';
+import { clearSheet, confirmTwice, esc, hint, openSheet, sheet, toast } from './ui.js';
 
 // Уменьшить фото перед сохранением: длинная сторона — не больше PHOTO_MAX_SIDE, JPEG.
 function shrink(file) {
@@ -48,7 +48,7 @@ export function createPhotos(ctx) {
     return `<div class="title-row"><a class="icon-btn" href="#/more" aria-label="Назад">${icon('back')}</a><h1>Моя Malibu</h1></div>
       ${c ? `<button class="photo-cover plain-btn" data-action="openPhoto" data-id="${esc(c.id)}" ${bg(c)}>
           ${c.caption ? `<span class="photo-cap">${esc(c.caption)}</span>` : ''}</button>`
-    : `<div class="hello">${mascot('', 'curious')}<div class="bubble">Добавь фото своей Malibu — первое станет обложкой</div></div>`}
+    : hint('Добавь фото своей Malibu — первое станет обложкой')}
       <div class="photo-grid">${list.filter((p) => p !== c).map((p) => `<button class="photo-tile plain-btn" data-action="openPhoto" data-id="${esc(p.id)}" ${bg(p)}></button>`).join('')}
         <label class="photo-add">${icon('plus')}<span>фото</span>${addInput()}</label></div>
       ${c ? `<label class="switch-row"><span><b>Обложка на главной</b><div class="muted">вместо картинки в шапке</div></span>

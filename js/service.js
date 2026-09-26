@@ -6,7 +6,7 @@ import * as L from './logic.js';
 import * as M from './maintenance.js';
 import { CATEGORIES, NODES } from './config.js';
 import { icon } from './icons.js';
-import { celebrate, clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
+import { celebrate, clearSheet, confirmTwice, esc, hint, openSheet, sheet, showFormError, toast } from './ui.js';
 import { serviceBookData } from './servicebook.js';
 import { preparePdf, serviceBookPdf } from './pdf.js';
 import { saveFile } from './backup.js';
@@ -66,11 +66,8 @@ export function createService(ctx) {
     const bubble = soon.length
       ? `${soon.length} ${L.plural(soon.length, CASES)} ждут — многое можно сделать за один визит на СТО`
       : 'По регламенту всё в порядке. Хорошей дороги!';
-    // Есть срочное — переживает; есть «скоро» — подмигивает с советом; всё хорошо — спокоен.
-    const urgent = soon.some((i) => i.level === 'bad');
-    const face = urgent ? mascot('', 'surprised', 'shake') : mascot('', soon.length ? 'wink' : 'happy');
     return `${chips('overview')}
-      <div class="hello">${face}<div class="bubble">${esc(bubble)}</div></div>
+      ${hint(bubble)}
       ${soon.length ? `<div class="sec">Скоро пора · ${soon.length}</div>
         <section class="card lines">${soon.map((i) => dotLine(i.level, i.title, i.label, soonHref(i))).join('')}</section>` : ''}
       <div class="sec">Ближайшая замена масла</div>
@@ -174,7 +171,7 @@ export function createService(ctx) {
     const works = new Map(state.works.map((w) => [w.id, w]));
     const noData = !status.last && !status.lastCheck && node.kind !== 'season';
     return `<div class="title-row"><a class="icon-btn" href="#/service/nodes" aria-label="Назад">${icon('back')}</a><h1>${esc(node.title)}</h1></div>
-      ${noData ? `<div class="hello">${mascot('', 'curious')}<div class="bubble">Не знаю, когда это ${node.kind === 'check' ? 'проверяли' : 'меняли'}. Если знаешь — нажми внизу «${verb}» и укажи дату</div></div>` : ''}
+      ${noData ? hint(`Не знаю, когда это ${node.kind === 'check' ? 'проверяли' : 'меняли'}. Если знаешь — нажми внизу «${verb}» и укажи дату`) : ''}
       <section class="card"><div class="row-between"><span class="dot ${LEVEL_CLASS[status.level]}"></span><b class="grow">${esc(status.label)}</b>
         <span class="muted">${status.nextKm ? `след. ~${L.formatKm(status.nextKm)} км` : ''}</span></div>${bar(status.progress, status.level)}</section>
       ${node.kind !== 'season' ? `<section class="card"><div class="muted">Интервал</div><b>${node.kind === 'check' ? 'проверка ' : ''}${interval || '—'}</b>

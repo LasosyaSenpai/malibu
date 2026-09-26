@@ -2,7 +2,7 @@
 // Сначала пробуем сеть (чтобы сразу получать обновления), при плохой связи — берём из кэша.
 // При изменении файлов приложения поднимать версию CACHE.
 
-const CACHE = 'malibu-v0.5.0';
+const CACHE = 'malibu-v0.6.0';
 const NETWORK_TIMEOUT_MS = 3000;
 const ASSETS = [
   './',
@@ -30,17 +30,15 @@ const ASSETS = [
   './js/sync.js',
   './js/ui.js',
   './img/car-header.jpg',
-  './img/shark-hero.png',
-  './img/shark-calm.png',
-  './img/shark-happy.png',
-  './img/shark-wink.png',
-  './img/shark-surprised.png',
-  './img/shark-proud.png',
-  './img/shark-excited.png',
-  './img/shark-curious.png',
-  './img/shark-sleepy.png',
-  './img/shark-mischief.png',
-  './img/shark-lick.png',
+  './img/live/happy.webp',
+  './img/live/closed.webp',
+  './img/live/oh.webp',
+  './img/live/surprised.webp',
+  './img/live/mischief.webp',
+  './img/live/wink-tongue.webp',
+  './img/live/proud.webp',
+  './img/live/wave.webp',
+  './img/live/lick.webp',
   './icons/apple-touch-icon.png',
   './icons/icon-192.png',
   './icons/icon-512.png',

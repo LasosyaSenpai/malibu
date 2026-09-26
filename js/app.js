@@ -6,7 +6,9 @@ import { APP_VERSION, CAR_DEFAULTS, CAR_PHOTO, FILE_BACKUP_STORES, HOME_PARKING_
 import { applyPlan, exportBackup, localBackupData, readBackupFile } from './backup.js';
 import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
-import { clearSheet, esc, kv, mascot, mascotTap, openSheet, setSheetCloser, sheet, showFormError, toast } from './ui.js';
+import {
+  clearSheet, esc, kv, liveShark, liveTap, openSheet, setSheetCloser, sheet, showFormError, startLife, toast,
+} from './ui.js';
 import { createService } from './service.js';
 import { createExpenses } from './expenses.js';
 import { createPhotos } from './photos.js';
@@ -175,7 +177,7 @@ function progress(step) {
 function onboardingView() {
   if (state.step === 1) {
     return `<div class="welcome">
-      ${mascot('xl', 'hero')}
+      ${liveShark('wave', 'xl')}
       <h1>Привет!<br>Я — твоя Malibu</h1>
       <p class="muted">Буду помнить про масло, ТО и расходы, чтобы тебе не приходилось</p>
     </div>
@@ -191,7 +193,7 @@ function onboardingView() {
   }
   return `${progress(3)}
     <div class="title-row"><button class="icon-btn" data-action="onbBack" aria-label="Назад">${icon('back')}</button><h1>Бекап</h1></div>
-    <div class="hello">${mascot('', 'wink')}<div class="bubble">Подключи бекап — тогда я ничего не забуду, даже если потеряешь телефон</div></div>
+    <div class="hello">${liveShark('wink')}<div class="bubble">Подключи бекап — тогда я ничего не забуду, даже если потеряешь телефон</div></div>
     <section class="card stack">
       <div class="list-row plain">${icon('table', 'green')}<div class="grow"><div class="strong">Google Таблица</div>
         <div class="muted">автосохранение после каждой записи</div></div>
@@ -227,8 +229,8 @@ function homeView() {
     </a>
     <button class="btn outline small" data-action="openKm">${icon('gauge')} Обновить пробег</button>
     ${state.sleepyDays
-    ? `<div class="hello">${mascot('', 'sleepy')}<div class="bubble">Давно не виделись — ${state.sleepyDays} ${L.plural(state.sleepyDays, L.DAYS)}! Обнови пробег, и я проверю, не пора ли что-то менять</div></div>`
-    : `<div class="hello">${mascot('', tip.mood === 'calm' ? 'happy' : tip.mood)}<div class="bubble">${esc(tip.text)}</div></div>`}
+    ? `<div class="hello">${liveShark('sleepy')}<div class="bubble">Давно не виделись — ${state.sleepyDays} ${L.plural(state.sleepyDays, L.DAYS)}! Обнови пробег, и я проверю, не пора ли что-то менять</div></div>`
+    : `<div class="hello">${liveShark(tip.mood)}<div class="bubble">${esc(tip.text)}</div></div>`}
     <div class="tiles">
       <div class="card tile"><div class="label">С покупки</div><div class="value">+${L.formatKm(stats.kmSince)} км</div>
         <div class="muted">за ${stats.days} ${L.plural(stats.days, L.DAYS)}</div></div>
@@ -310,6 +312,7 @@ function tabbar(route) {
 function render() {
   if (state.onboarding) {
     $app.innerHTML = `<main class="screen onboard">${onboardingView()}</main>`;
+    startLife();
     return;
   }
   // Адрес вида #/service/node/oil: раздел — первая часть, остальное — внутри раздела.
@@ -321,6 +324,8 @@ function render() {
     more: () => (rest[0] === 'photos' ? photos.view() : moreView()),
   };
   $app.innerHTML = `<main class="screen">${(views[route] || homeView)()}</main>${tabbar(route)}`;
+  // Акулёнок «живёт» только там, где он есть (главная, первый запуск).
+  startLife();
 }
 
 // ---------- Окна (снизу) ----------
@@ -616,7 +621,7 @@ const actions = {
     closeSheet();
   },
 
-  mascotTap(el) { mascotTap(el); },
+  liveTap(el) { liveTap(el); },
 
   ...service.actions,
   ...expenses.actions,

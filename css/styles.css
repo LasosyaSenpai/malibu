@@ -81,46 +81,45 @@ b, .strong { font-weight: 600; }
 .icon-btn { border: 0; background: none; color: var(--text); padding: 4px; margin-left: -6px; display: grid; place-items: center; cursor: pointer; }
 .icon-btn .ic { width: 26px; height: 26px; }
 
-/* Талисман (пока заглушка-лапка) */
-.mascot {
-  width: 52px; height: 52px; flex: none; padding: 0; cursor: pointer;
-  border-radius: 50%; background: #EEF1FA; border: 2px solid var(--chrome); overflow: hidden;
-  animation: bob 3.2s ease-in-out infinite;
+/* Живой акулёнок (решение 26.09): без кружка, картинки на прозрачном фоне — app/img/live */
+.live-shark {
+  width: 84px; height: 84px; flex: none; padding: 0; border: 0; background: none; cursor: pointer;
+  transform-origin: 50% 90%; animation: breathe 3.4s ease-in-out infinite;
+  -webkit-tap-highlight-color: transparent;
 }
-.mascot img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; user-select: none; -webkit-user-select: none; }
-.mascot.xl { width: 170px; height: 170px; border-width: 3px; box-shadow: 0 0 0 10px var(--accent-soft); }
-.mascot.jump { animation: jump .8s ease-out, bob 3.2s ease-in-out .8s infinite; }
-.mascot.shake { animation: shake .6s ease-in-out .3s 2, bob 3.2s ease-in-out 1.5s infinite; }
-@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
-@keyframes jump { 0% { transform: translateY(0) scale(1); } 35% { transform: translateY(-16px) scale(1.08); } 65% { transform: translateY(2px) scale(.97); } 100% { transform: translateY(0) scale(1); } }
+.live-shark img, .leap-shark img, .peek-shark img {
+  width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;
+  user-select: none; -webkit-user-select: none; filter: drop-shadow(0 8px 14px rgba(27, 35, 69, .22));
+}
+.live-shark.xl { width: min(62vw, 240px); height: min(62vw, 240px); }
+.live-shark.hop { animation: hop .85s ease-out; }
+.pop { animation: pose-pop .22s ease-out; }
+@keyframes breathe { 0%, 100% { transform: translateY(0) rotate(-1.5deg) scale(1, 1); } 50% { transform: translateY(-4px) rotate(1.5deg) scale(1.015, .985); } }
+@keyframes hop { 0% { transform: translateY(0); } 15% { transform: translateY(4px) scale(1.08, .9); } 50% { transform: translateY(-30px) scale(.95, 1.06) rotate(-8deg); } 100% { transform: translateY(0); } }
+@keyframes pose-pop { 0% { transform: scale(.92, 1.06); } 60% { transform: scale(1.05, .96); } 100% { transform: scale(1); } }
+/* Прыжок посреди экрана */
+.leap {
+  position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+  background: rgba(246, 244, 252, 0); -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0);
+  transition: background .25s, backdrop-filter .25s, -webkit-backdrop-filter .25s; overflow: hidden; padding: 24px;
+}
+.leap.on { background: rgba(246, 244, 252, .86); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.leap-shark { width: min(66vw, 280px); aspect-ratio: 1; transform-origin: 50% 85%; }
+.leap-text { font-size: 20px; font-weight: 600; text-align: center; max-width: 300px; opacity: 0; transition: opacity .3s; min-height: 56px; }
+.leap.said .leap-text { opacity: 1; }
+.drop {
+  position: fixed; bottom: -10px; z-index: 31; pointer-events: none; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: rgba(90, 167, 232, .5); border: 1.5px solid rgba(90, 167, 232, .8);
+}
+/* Ошибка в форме: выглядывает сбоку */
+.peek-shark { position: fixed; right: -14px; z-index: 40; width: 120px; height: 120px; transform-origin: 80% 80%; pointer-events: none; }
 @keyframes shake { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-8deg); } 75% { transform: rotate(8deg); } }
-/* Акулёнок на весь экран */
-.celebrate {
-  position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
-  background: rgba(246, 244, 252, 0.88); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  animation: fade .2s ease-out; overflow: hidden; padding: 24px;
-}
-.celebrate.out { opacity: 0; transition: opacity .3s ease-in; }
-.cel-shark {
-  width: min(64vw, 260px); aspect-ratio: 1; border-radius: 50%; overflow: hidden;
-  border: 4px solid var(--chrome); box-shadow: 0 0 0 14px var(--accent-soft), 0 18px 40px rgba(27, 35, 69, .18);
-  animation: pop .6s cubic-bezier(.2, 1.4, .4, 1) both, float 2.4s ease-in-out .6s infinite;
-}
-.cel-shark img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cel-text { font-size: 20px; font-weight: 600; text-align: center; max-width: 300px; animation: rise .5s ease-out .25s both; }
-.cel-bubbles i {
-  position: absolute; bottom: -30px; border-radius: 50%; background: rgba(90, 167, 232, .35);
-  border: 1.5px solid rgba(90, 167, 232, .6); animation: bubble 2.2s ease-in both;
-}
-@keyframes pop { 0% { transform: scale(.3) rotate(-12deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
-@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-@keyframes rise { from { transform: translateY(14px); opacity: 0; } }
-@keyframes bubble { 0% { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(-105vh); opacity: 0; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .mascot, .mascot.jump, .mascot.shake, .cel-shark, .cel-text, .cel-bubbles i { animation: none; }
+  .live-shark, .live-shark.hop, .pop { animation: none; }
 }
-.hello { display: flex; align-items: flex-end; gap: 10px; }
+.hello { display: flex; align-items: flex-end; gap: 6px; }
+.bubble.solo { border-radius: 16px; }
 .bubble { background: var(--accent-soft); border-radius: 16px 16px 16px 4px; padding: 9px 12px; font-size: 13px; line-height: 1.35; }
 
 /* Первый запуск */
@@ -150,8 +149,6 @@ input::placeholder { color: var(--muted); }
 .error { color: var(--bad); font-size: 13px; }
 .error:empty { display: none; }
 .error.warn { color: var(--warn-text); }
-.error.with-face { display: flex; align-items: center; gap: 10px; }
-.err-face { width: 40px; height: 40px; border-radius: 50%; flex: none; border: 2px solid var(--chrome); animation: shake .5s ease-in-out; }
 
 /* Главная: шапка с фото машины */
 .car-photo {
