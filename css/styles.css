@@ -353,6 +353,13 @@ a.list-btn { text-decoration: none; }
   font-size: 12px; font-weight: 600; cursor: pointer;
 }
 .photo-full { width: 100%; border-radius: 16px; display: block; }
+.head-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.head-opt {
+  display: flex; flex-direction: column; gap: 6px; padding: 6px; border-radius: 14px;
+  border: 1.5px solid var(--line); background: var(--card); font-size: 12px; font-weight: 600; text-align: center;
+}
+.head-opt.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-press); }
+.head-thumb { display: block; aspect-ratio: 720 / 358; border-radius: 10px; background: var(--navy) center / cover no-repeat; }
 
 /* Эмблема на вкладке «Главная» */
 .tab .ic.bowtie { width: 34px; height: 24px; padding: 3px 0; }

@@ -4,7 +4,7 @@
 
 import * as db from './db.js';
 import * as L from './logic.js';
-import { PHOTO_JPEG_QUALITY, PHOTO_MAX_SIDE } from './config.js';
+import { CAR_PHOTO, PHOTO_JPEG_QUALITY, PHOTO_MAX_SIDE } from './config.js';
 import { icon } from './icons.js';
 import { clearSheet, confirmTwice, esc, hint, openSheet, sheet, toast } from './ui.js';
 
@@ -51,8 +51,13 @@ export function createPhotos(ctx) {
     : hint('Добавь фото своей Malibu — первое станет обложкой')}
       <div class="photo-grid">${list.filter((p) => p !== c).map((p) => `<button class="photo-tile plain-btn" data-action="openPhoto" data-id="${esc(p.id)}" ${bg(p)}></button>`).join('')}
         <label class="photo-add">${icon('plus')}<span>фото</span>${addInput()}</label></div>
-      ${c ? `<label class="switch-row"><span><b>Обложка на главной</b><div class="muted">вместо картинки в шапке</div></span>
-        <input type="checkbox" class="switch" data-action="togglePhotoHome" ${state.meta.photoOnHome ? 'checked' : ''}></label>` : ''}
+      ${c ? `<div class="sec">Фото в шапке главной</div>
+        <div class="head-pick">
+          <button class="head-opt plain-btn ${state.meta.photoOnHome ? '' : 'on'}" data-action="setHomePhoto" data-own="">
+            <span class="head-thumb" style="background-image:url('${CAR_PHOTO}')"></span><span>Стандартная</span></button>
+          <button class="head-opt plain-btn ${state.meta.photoOnHome ? 'on' : ''}" data-action="setHomePhoto" data-own="1">
+            <span class="head-thumb" ${bg(c)}></span><span>Моё фото (обложка)</span></button>
+        </div>` : ''}
       <p class="muted">Фото хранятся только на этом телефоне и в файле-бекапе («Ещё → Экспорт»). В Google Таблицу и в интернет они не попадают.</p>`;
   }
 
@@ -119,8 +124,12 @@ export function createPhotos(ctx) {
       await ctx.afterChange();
     },
 
-    async togglePhotoHome(el) {
-      await ctx.saveMeta({ photoOnHome: el.checked });
+    // Шапка главной: стандартная картинка или своя обложка — вернуть можно в любой момент.
+    async setHomePhoto(el) {
+      const own = Boolean(el.dataset.own);
+      await ctx.saveMeta({ photoOnHome: own });
+      await ctx.afterChange();
+      toast(own ? 'На главной — твоё фото' : 'На главной — стандартная картинка');
     },
   };
 
