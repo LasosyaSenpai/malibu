@@ -3,7 +3,7 @@
 
 import {
   EXPENSE_CATEGORIES, FUEL_CATEGORY, FUEL_L100_MAX, FUEL_L100_MIN, FUEL_ODD_MIN_SEGMENTS, FUEL_ODD_SHARE,
-  FUEL_PRICE_MAX, FUEL_PRICE_MIN, MONTH_KM_BASE_DAYS, MONTHS, SERVICE_CATEGORY, TANK_LITERS, TANK_SLACK_LITERS,
+  FUEL_PRICE_MAX, FUEL_PRICE_MIN, HOME_PARKING_CATEGORY, MONTH_KM_BASE_DAYS, MONTHS, SERVICE_CATEGORY, TANK_LITERS, TANK_SLACK_LITERS,
 } from './config.js';
 import { daysBetween, formatDate, formatKm, latestReading, parseKm } from './logic.js';
 import { parseMoney, workTotal, workTitle } from './maintenance.js';
@@ -157,13 +157,15 @@ export function validateExpenseInput(raw, today) {
 export function costCategory(key) {
   if (key === FUEL_CATEGORY.key) return FUEL_CATEGORY;
   if (key === SERVICE_CATEGORY.key) return SERVICE_CATEGORY;
+  if (key === HOME_PARKING_CATEGORY.key) return HOME_PARKING_CATEGORY;
   return EXPENSE_CATEGORIES.find((c) => c.key === key) || EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1];
 }
 
-// Заправки, расходы и работы на СТО — одним списком, новые первыми.
-// Элемент: { kind: 'fuel' | 'expense' | 'work', id, date, category, title, sum }.
-export function costItems({ fuel = [], expenses = [], works = [] }) {
+// Заправки, расходы, работы на СТО и домашняя парковка (готовые строки из parking.js) — одним списком, новые первыми.
+// Элемент: { kind: 'fuel' | 'expense' | 'work' | 'parking', id, date, category, title, sum }.
+export function costItems({ fuel = [], expenses = [], works = [], parking = [] }) {
   const items = [
+    ...parking,
     ...fuel.map((f) => ({ kind: 'fuel', id: f.id, date: f.date, category: FUEL_CATEGORY.key,
       title: `Заправка ${f.station || ''}`.trim(), sum: f.sum || 0, liters: f.liters })),
     ...expenses.map((e) => ({ kind: 'expense', id: e.id, date: e.date, category: e.category,

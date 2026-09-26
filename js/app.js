@@ -2,7 +2,7 @@
 
 import * as db from './db.js';
 import * as L from './logic.js';
-import { APP_VERSION, CAR_DEFAULTS, CAR_PHOTO, SLEEPY_DAYS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
+import { APP_VERSION, CAR_DEFAULTS, CAR_PHOTO, HOME_PARKING_ID, SLEEPY_DAYS, SOURCE_LABELS, SYNC_DEBOUNCE_MS } from './config.js';
 import { applyPlan, exportBackup, localBackupData, readBackupFile } from './backup.js';
 import { ping, syncNow } from './sync.js';
 import { icon } from './icons.js';
@@ -21,6 +21,8 @@ const state = {
   stock: [],
   fuel: [],
   expenses: [],
+  parkingSettings: null,
+  parkingDays: [],
   meta: { id: 'meta' },
   onboarding: false,
   step: 1,
@@ -39,6 +41,8 @@ async function load() {
   state.stock = await db.getAll('stock');
   state.fuel = await db.getAll('fuel');
   state.expenses = await db.getAll('expenses');
+  state.parkingSettings = await db.get('settings', HOME_PARKING_ID);
+  state.parkingDays = await db.getAll('parkingDays');
   state.meta = (await db.get('meta', 'meta')) || { id: 'meta' };
 }
 

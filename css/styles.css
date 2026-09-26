@@ -321,6 +321,21 @@ input.switch:checked { background: var(--accent); }
 input.switch:checked::after { transform: translateX(20px); }
 input.switch:focus { box-shadow: none; }
 
+/* Домашняя парковка: календарь */
+.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; text-align: center; }
+.cal .wd { font-size: 11px; font-weight: 600; color: var(--muted); padding-bottom: 2px; }
+.day {
+  height: 40px; border-radius: 11px; border: 1px solid transparent; background: none; padding: 0;
+  font: inherit; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer;
+}
+.day.home { background: var(--accent-soft); color: var(--accent-press); }
+.day.away { background: var(--card); border: 1px dashed #CFC7EA; color: #B5B8CC; text-decoration: line-through; }
+.day.future, .day.before { color: #C9CBDA; cursor: default; }
+.day.today { box-shadow: 0 0 0 2px var(--accent); }
+.legend .lg-home { background: var(--accent-soft); border-radius: 3px; }
+.legend .lg-away { border: 1px dashed #CFC7EA; border-radius: 3px; }
+.card.plain-btn.row-between { display: flex; }
+
 /* Окно снизу */
 .sheet-backdrop {
   position: fixed; inset: 0; z-index: 10;

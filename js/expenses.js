@@ -4,9 +4,10 @@
 import * as db from './db.js';
 import * as L from './logic.js';
 import * as C from './costs.js';
+import * as P from './parking.js';
 import { formatMoney } from './maintenance.js';
 import {
-  EXPENSE_CATEGORIES, FUEL_STATIONS, FUEL_TYPE_DEFAULT, FUEL_TYPES, MONTHS, MONTHS_IN,
+  EXPENSE_CATEGORIES, FUEL_STATIONS, FUEL_TYPE_DEFAULT, FUEL_TYPES, HOME_PARKING_ID, MONTHS, MONTHS_IN,
 } from './config.js';
 import { icon } from './icons.js';
 import { celebrate, clearSheet, confirmTwice, esc, mascot, openSheet, sheet, showFormError, toast } from './ui.js';
@@ -17,12 +18,18 @@ const RING_R = 52;
 const OTHER_STATION = 'Другая';
 // После покупок акулёнок гордый (решение 26.09).
 const PROUD_CATEGORIES = ['accessories', 'care'];
+const NIGHTS = ['ночь', 'ночи', 'ночей'];
+const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 
 // ctx: { state, currentKm(), afterChange() } — связь с app.js.
 export function createExpenses(ctx) {
   const { state } = ctx;
   const today = () => L.todayIso();
-  const items = () => C.costItems(state);
+  const parking = () => state.parkingSettings;
+  const items = () => C.costItems({
+    ...state, parking: parking() ? P.parkingItems(parking(), state.parkingDays, today()) : [],
+  });
+  const nights = (n) => `${n} ${L.plural(n, NIGHTS)}`;
   const sortedFuel = () => [...state.fuel].sort((a, b) => b.date.localeCompare(a.date) || (b.km || 0) - (a.km || 0));
 
   // ---------- Кусочки ----------
@@ -73,7 +80,56 @@ export function createExpenses(ctx) {
     return `<span class="cons">${v}</span>`;
   }
 
+  // Месяц со стрелками ‹ › (от first до now включительно).
+  function monthNav(route, month, first, now) {
+    const arrow = (to, cls, label) => (to
+      ? `<a class="icon-btn ${cls}" href="#/expenses/${route}/${to}" aria-label="${label}">${icon('back')}</a>`
+      : `<span class="icon-btn ${cls} off">${icon('back')}</span>`);
+    return `<div class="month-nav">${arrow(month > first ? C.shiftMonth(month, -1) : '', '', 'Прошлый месяц')}
+      <b>${C.monthTitle(month)}</b>${arrow(month < now ? C.shiftMonth(month, 1) : '', 'flip', 'Следующий месяц')}</div>`;
+  }
+
+  // Карточка домашней парковки в обзоре месяца.
+  function parkingCard(month) {
+    const s = parking();
+    if (!s) {
+      return `<button class="card plain-btn node" data-action="editParking"><div class="node-head"><span class="ic-box">${icon('home')}</span>
+        <span class="grow"><b>Парковка у дома</b><div class="muted">настроить — посчитаю сама за каждые сутки</div></span>${icon('chevron', 'muted-ic')}</div></button>`;
+    }
+    if (month < C.monthKey(s.since)) return '';
+    const m = P.parkingMonth(month, s, state.parkingDays, today());
+    return `<a class="card node" href="#/expenses/parking/${month}"><div class="node-head"><span class="ic-box">${icon('home')}</span>
+      <span class="grow"><b>Парковка у дома</b><div class="muted">${nights(m.nights)}${m.away ? ` · не дома ${m.away}` : ''}</div></span>
+      <b class="money">${money(m.sum)}</b>${icon('chevron', 'muted-ic')}</div></a>`;
+  }
+
   // ---------- Экраны ----------
+
+  function parkingView(param) {
+    const s = parking();
+    const back = `<div class="title-row"><a class="icon-btn" href="#/expenses/overview" aria-label="Назад">${icon('back')}</a><h1>Парковка у дома</h1></div>`;
+    if (!s) {
+      return `${back}<div class="hello">${mascot('', 'curious')}<div class="bubble">Скажи цену за сутки и с какого дня считать — дальше посчитаю сама</div></div>
+        <button class="btn primary" data-action="editParking">Настроить</button>`;
+    }
+    const now = C.monthKey(today());
+    const first = C.monthKey(s.since);
+    const month = /^\d{4}-\d{2}$/.test(param || '') && param >= first && param <= now ? param : now;
+    const m = P.parkingMonth(month, s, state.parkingDays, today());
+    const rate = P.rateOn(m.days[m.days.length - 1].date, s.rates);
+    const total = P.parkingItems(s, state.parkingDays, today()).reduce((sum, it) => sum + it.sum, 0);
+    const cells = m.days.map((d) => `<button class="day ${d.state} ${d.date === today() ? 'today' : ''}" data-action="toggleNight"
+      data-date="${d.date}" ${d.state === 'home' || d.state === 'away' ? '' : 'disabled'}>${Number(d.date.slice(8))}</button>`).join('');
+    return `${back}
+      <section class="card">${monthNav('parking', month, first, now)}
+        <div class="row-between"><span class="muted">${nights(m.nights)} × ${money(rate)} грн</span><b class="big-sum">${formatMoney(m.sum)}</b></div></section>
+      <section class="card"><div class="cal">${WEEKDAYS.map((w) => `<span class="wd">${w}</span>`).join('')}${'<span></span>'.repeat(m.offset)}${cells}</div>
+        <div class="legend"><span><i class="lg-home"></i>дома, платно</span><span><i class="lg-away"></i>не дома</span></div></section>
+      <p class="muted center-text">Нажми на день, если машина ночевала не у дома (или наоборот)</p>
+      <button class="card plain-btn row-between" data-action="editParking"><span><b>${money(P.currentRate(s, today()))} грн</b> за сутки · с ${L.formatDate(s.since).slice(0, 5)}${s.weekendsAway ? ' · выходные не дома' : ''}</span>
+        <span class="link-btn">изменить</span></button>
+      <p class="muted">С начала отсчёта — ${formatMoney(total)}</p>`;
+  }
 
   function overview(param) {
     const now = C.monthKey(today());
@@ -90,10 +146,8 @@ export function createExpenses(ctx) {
     const bubble = top
       ? `Больше всего в ${monthIn} ушло на ${lower(partLabel(top))} — ${Math.round((top.total / total) * 100)}%`
       : `В ${monthIn} расходов пока нет. Заправилась? Нажми «Заправка»`;
-    const prev = month > first ? `<a class="icon-btn" href="#/expenses/overview/${C.shiftMonth(month, -1)}" aria-label="Прошлый месяц">${icon('back')}</a>` : '<span class="icon-btn off">' + icon('back') + '</span>';
-    const next = month < now ? `<a class="icon-btn flip" href="#/expenses/overview/${C.shiftMonth(month, 1)}" aria-label="Следующий месяц">${icon('back')}</a>` : `<span class="icon-btn flip off">${icon('back')}</span>`;
     return `${chips('overview')}
-      <div class="month-nav">${prev}<b>${C.monthTitle(month)}</b>${next}</div>
+      ${monthNav('overview', month, first, now)}
       <section class="card ring-card">${ring(parts, total, MONTHS[Number(month.slice(5)) - 1].toLowerCase())}
         <div class="grow">${parts.map((p, i) => `<div class="row-between ring-row"><span class="ring-lbl"><i style="background:${RING_COLORS[i]}"></i>${esc(partLabel(p))}</span>
           <b>${money(p.total)}</b></div>`).join('') || '<p class="muted">Пусто</p>'}</div></section>
@@ -102,6 +156,7 @@ export function createExpenses(ctx) {
         <div class="row-between line"><span>1 км обходится</span><b>${km && total ? `${C.formatDecimal(total / km, 2)} грн` : '—'}</b></div>
         <div class="row-between line"><span>Проехала за месяц</span><b>${km ? `~${L.formatKm(km)} км` : '—'}</b></div>
       </section>
+      ${parkingCard(month)}
       <div class="hello">${mascot('', 'lick')}<div class="bubble">${esc(bubble)}</div></div>
       ${addButtons()}`;
   }
@@ -144,9 +199,11 @@ export function createExpenses(ctx) {
     const row = (it) => {
       const c = C.costCategory(it.category);
       const sub = [L.formatDate(it.date).slice(0, 5),
-        it.kind === 'work' ? 'из ТО' : it.kind === 'fuel' ? `${C.formatDecimal(it.liters, it.liters % 1 ? 1 : 0)} л` : ''].filter(Boolean).join(' · ');
+        it.kind === 'work' ? 'из ТО' : it.kind === 'fuel' ? `${C.formatDecimal(it.liters, it.liters % 1 ? 1 : 0)} л` : '',
+        it.kind === 'parking' ? nights(it.nights) : ''].filter(Boolean).join(' · ');
       const inner = `<span class="ic-box">${icon(c.icon)}</span><span class="grow"><b>${esc(it.title)}</b><div class="muted">${sub}</div></span><b class="money">${money(it.sum)}</b>`;
       if (it.kind === 'work') return `<a class="line" href="#/service/work/${esc(it.id)}">${inner}</a>`;
+      if (it.kind === 'parking') return `<a class="line" href="#/expenses/parking/${C.monthKey(it.date)}">${inner}</a>`;
       return `<button class="line plain-btn" data-action="${it.kind === 'fuel' ? 'editFuel' : 'editExpense'}" data-id="${esc(it.id)}">${inner}</button>`;
     };
     return `${chips('all')}${filter}
@@ -160,6 +217,7 @@ export function createExpenses(ctx) {
     const [tab, param] = (sub || '').split('/');
     if (tab === 'fuel') return fuelView();
     if (tab === 'all') return allView(param);
+    if (tab === 'parking') return parkingView(param);
     return overview(param);
   }
 
@@ -227,6 +285,19 @@ export function createExpenses(ctx) {
       <p class="error" id="ex-error" role="alert"></p>
       <button class="btn primary" data-action="saveExpense" data-id="${esc(e.id || '')}">Сохранить</button>
       ${e.id ? `<button class="btn link danger" data-action="deleteExpense" data-id="${esc(e.id)}">Удалить</button>` : ''}`);
+  }
+
+  function parkingForm(s) {
+    const rate = s ? P.currentRate(s, today()) : '';
+    return sheet('Парковка у дома', `
+      <label class="field hl"><span>Цена за сутки, грн</span><input id="pk-rate" inputmode="decimal" value="${rate}" placeholder="40"></label>
+      ${s ? `<label class="field"><span>Если цена изменилась — новая действует с</span><input id="pk-rate-from" type="date" value="${today()}"></label>` : ''}
+      <label class="field"><span>Считать с</span><input id="pk-since" type="date" value="${esc(s ? s.since : `${C.monthKey(today())}-01`)}"></label>
+      <label class="switch-row"><span><b>Выходные — не дома</b><div class="muted">суббота и воскресенье по умолчанию не считаются</div></span>
+        <input type="checkbox" class="switch" id="pk-weekends" ${s && s.weekendsAway ? 'checked' : ''}></label>
+      <p class="muted">Любой день можно переключить в календаре. Старые дни при смене цены не пересчитываются.</p>
+      <p class="error" id="pk-error" role="alert"></p>
+      <button class="btn primary" data-action="saveParking">Сохранить</button>`);
   }
 
   const val = (id) => document.getElementById(id)?.value ?? '';
@@ -327,6 +398,30 @@ export function createExpenses(ctx) {
       await db.put('expenses', { ...(existing || {}), ...res.expense });
       const proud = !existing && PROUD_CATEGORIES.includes(res.expense.category);
       await done(existing ? 'Исправлено' : 'Расход сохранён', proud ? { pose: 'proud', text: 'Обновка! Записала' } : null);
+    },
+
+    editParking() { openSheet(parkingForm(parking())); },
+
+    async saveParking() {
+      const res = P.validateParkingInput({
+        rate: val('pk-rate'), rateFrom: val('pk-rate-from'), since: val('pk-since'),
+        weekendsAway: document.getElementById('pk-weekends').checked,
+      }, parking(), today());
+      if (res.error) { showFormError('pk-error', res.error); return; }
+      await db.put('settings', { ...(parking() || {}), id: HOME_PARKING_ID, ...res.settings });
+      location.hash = '#/expenses/parking';
+      await done('Парковка настроена');
+    },
+
+    // Переключить день в календаре: «дома» ↔ «не дома». Отметка, совпавшая с обычной, убирается.
+    async toggleNight(el) {
+      const s = parking();
+      const date = el.dataset.date;
+      const cur = P.dayState(date, s, state.parkingDays, today());
+      if (cur !== 'home' && cur !== 'away') return;
+      const home = cur === 'away';
+      await db.put('parkingDays', { id: `pd-${date}`, date, home, deleted: home === P.defaultHome(date, s) });
+      await ctx.afterChange();
     },
 
     async deleteExpense(el) {

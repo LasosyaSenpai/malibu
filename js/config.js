@@ -1,15 +1,16 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.4.0';
+export const APP_VERSION = '0.4.1';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.
 export const DB_NAME = 'malibu-assistant';
-export const DB_VERSION = 3;
-export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses'];
+export const DB_VERSION = 4;
+export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays'];
 
 // Что попадает в файл-бекап и в Google Таблицу. `meta` — настройки этого телефона, туда не идут.
-export const BACKUP_STORES = ['car', 'odometer', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses'];
+// `settings` — общие настройки (домашняя парковка), `parkingDays` — дни, отмеченные в календаре парковки.
+export const BACKUP_STORES = ['car', 'odometer', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays'];
 export const BACKUP_VERSION = 1;
 
 // Подставляется в форму при первом запуске. Личных данных (VIN и т.п.) здесь быть не должно — код публичный.
@@ -137,6 +138,10 @@ export const EXPENSE_CATEGORIES = [
   { key: 'care', label: 'Уход', icon: 'sparkles' },
   { key: 'other', label: 'Другое', icon: 'box' },
 ];
+
+// Домашняя парковка (решение 26.09): платно каждые сутки, кроме ночей «не дома». Итог — одной строкой на месяц.
+export const HOME_PARKING_CATEGORY = { key: 'homeParking', label: 'Парковка у дома', icon: 'home' };
+export const HOME_PARKING_ID = 'homeParking'; // id записи настройки в `settings`
 
 // «Проехала за месяц»: запись пробега до начала месяца берём за точку отсчёта, только если она не старше.
 export const MONTH_KM_BASE_DAYS = 7;
