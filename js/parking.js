@@ -1,17 +1,25 @@
 // Чистая логика домашней парковки: платим за каждые сутки, кроме ночей, когда машина не у дома.
 // Решение 26.09 (docs/DECISIONS.md): календарь месяца (вариант А), по умолчанию все дни «дома»,
-// выходные (сб, вс) — «не дома», если так задано в настройке; любой день переключается нажатием.
-// settings: { since, weekendsAway, rates: [{ from, rate }] }; overrides: [{ date, home }] — дни, отмеченные вручную.
+// кроме дней недели из настройки (у пользователя — суббота: в воскресенье к ночи обычно возвращается);
+// любой день переключается нажатием.
+// settings: { since, awayWeekdays: [0..6, 0 — воскресенье], rates: [{ from, rate }] };
+// overrides: [{ date, home }] — дни, отмеченные вручную.
 
 import { HOME_PARKING_CATEGORY } from './config.js';
 import { parseMoney } from './maintenance.js';
 
 const pad = (n) => String(n).padStart(2, '0');
 
-export function isWeekend(iso) {
+// День недели: 0 — воскресенье, 6 — суббота.
+export function weekday(iso) {
   const [y, m, d] = iso.split('-').map(Number);
-  const day = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
-  return day === 0 || day === 6;
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+// Дни недели «обычно не дома». Старая настройка weekendsAway (0.4.1) = суббота и воскресенье.
+export function awayWeekdays(settings) {
+  if (Array.isArray(settings.awayWeekdays)) return settings.awayWeekdays;
+  return settings.weekendsAway ? [6, 0] : [];
 }
 
 // Цена суток на дату: последняя цена, действующая с этой даты или раньше.
@@ -30,11 +38,13 @@ export function dayState(date, settings, overrides, today) {
   if (date > today) return 'future';
   const own = overrides.find((o) => o.date === date);
   if (own) return own.home ? 'home' : 'away';
-  return settings.weekendsAway && isWeekend(date) ? 'away' : 'home';
+  return defaultHome(date, settings) ? 'home' : 'away';
 }
 
 // Как день выглядел бы без ручной отметки.
-export const defaultHome = (date, settings) => !(settings.weekendsAway && isWeekend(date));
+export function defaultHome(date, settings) {
+  return !awayWeekdays(settings).includes(weekday(date));
+}
 
 function daysOfMonth(key) {
   const [y, m] = key.split('-').map(Number);
@@ -97,5 +107,6 @@ export function validateParkingInput(raw, current, today) {
     if (from > today) return { error: 'Дата новой цены не может быть в будущем' };
     rates = [...rates.filter((r) => r.from !== from), { from, rate }].sort((a, b) => a.from.localeCompare(b.from));
   }
-  return { settings: { since: raw.since, weekendsAway: Boolean(raw.weekendsAway), rates } };
+  const away = [...new Set((raw.awayWeekdays || []).map(Number))].filter((d) => d >= 0 && d <= 6).sort();
+  return { settings: { since: raw.since, awayWeekdays: away, rates } };
 }

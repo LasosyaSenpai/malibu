@@ -1,6 +1,6 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.4.1';
+export const APP_VERSION = '0.4.2';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.
@@ -116,7 +116,7 @@ export const TANK_SLACK_LITERS = 2; // горловина и погрешнос�
 export const FUEL_PRICE_MIN = 20;
 export const FUEL_PRICE_MAX = 150;
 // АЗС кнопками. Свои названия («Другая») запоминаются и тоже становятся кнопками.
-export const FUEL_STATIONS = ['OKKO', 'WOG', 'SOCAR', 'UPG', 'BRSM'];
+export const FUEL_STATIONS = ['OKKO', 'WOG', 'SOCAR', 'UPG', 'Укрнафта'];
 export const FUEL_TYPES = ['А-92', 'А-95', 'А-95 премиум'];
 export const FUEL_TYPE_DEFAULT = 'А-95';
 // Расход «полный бак → полный бак». Отрезок вне рамок или сильно не как обычно — подсвечивается

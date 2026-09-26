@@ -335,6 +335,7 @@ input.switch:focus { box-shadow: none; }
 .legend .lg-home { background: var(--accent-soft); border-radius: 3px; }
 .legend .lg-away { border: 1px dashed #CFC7EA; border-radius: 3px; }
 .card.plain-btn.row-between { display: flex; }
+.pick-btn.day-pick { min-width: 44px; justify-content: center; padding: 0 8px; }
 
 /* Окно снизу */
 .sheet-backdrop {

@@ -20,6 +20,8 @@ const OTHER_STATION = 'Другая';
 const PROUD_CATEGORIES = ['accessories', 'care'];
 const NIGHTS = ['ночь', 'ночи', 'ночей'];
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+const WEEKDAY_NUMS = [1, 2, 3, 4, 5, 6, 0]; // номера дней (0 — воскресенье) в порядке WEEKDAYS
+const WEEKDAYS_ON = ['по воскресеньям', 'по понедельникам', 'по вторникам', 'по средам', 'по четвергам', 'по пятницам', 'по субботам'];
 
 // ctx: { state, currentKm(), afterChange() } — связь с app.js.
 export function createExpenses(ctx) {
@@ -89,6 +91,14 @@ export function createExpenses(ctx) {
       <b>${C.monthTitle(month)}</b>${arrow(month < now ? C.shiftMonth(month, 1) : '', 'flip', 'Следующий месяц')}</div>`;
   }
 
+  // « · не дома по субботам» (в порядке недели с понедельника).
+  function awayText(s) {
+    const away = P.awayWeekdays(s);
+    const list = WEEKDAY_NUMS.filter((d) => away.includes(d)).map((d) => WEEKDAYS_ON[d]);
+    if (!list.length) return '';
+    return ` · не дома ${list.length === 1 ? list[0] : `${list.slice(0, -1).join(', ')} и ${list[list.length - 1].replace(/^по /, '')}`}`;
+  }
+
   // Карточка домашней парковки в обзоре месяца.
   function parkingCard(month) {
     const s = parking();
@@ -126,7 +136,7 @@ export function createExpenses(ctx) {
       <section class="card"><div class="cal">${WEEKDAYS.map((w) => `<span class="wd">${w}</span>`).join('')}${'<span></span>'.repeat(m.offset)}${cells}</div>
         <div class="legend"><span><i class="lg-home"></i>дома, платно</span><span><i class="lg-away"></i>не дома</span></div></section>
       <p class="muted center-text">Нажми на день, если машина ночевала не у дома (или наоборот)</p>
-      <button class="card plain-btn row-between" data-action="editParking"><span><b>${money(P.currentRate(s, today()))} грн</b> за сутки · с ${L.formatDate(s.since).slice(0, 5)}${s.weekendsAway ? ' · выходные не дома' : ''}</span>
+      <button class="card plain-btn row-between" data-action="editParking"><span><b>${money(P.currentRate(s, today()))} грн</b> за сутки · с ${L.formatDate(s.since).slice(0, 5)}${awayText(s)}</span>
         <span class="link-btn">изменить</span></button>
       <p class="muted">С начала отсчёта — ${formatMoney(total)}</p>`;
   }
@@ -289,12 +299,16 @@ export function createExpenses(ctx) {
 
   function parkingForm(s) {
     const rate = s ? P.currentRate(s, today()) : '';
+    const away = s ? P.awayWeekdays(s) : [];
     return sheet('Парковка у дома', `
       <label class="field hl"><span>Цена за сутки, грн</span><input id="pk-rate" inputmode="decimal" value="${rate}" placeholder="40"></label>
       ${s ? `<label class="field"><span>Если цена изменилась — новая действует с</span><input id="pk-rate-from" type="date" value="${today()}"></label>` : ''}
       <label class="field"><span>Считать с</span><input id="pk-since" type="date" value="${esc(s ? s.since : `${C.monthKey(today())}-01`)}"></label>
-      <label class="switch-row"><span><b>Выходные — не дома</b><div class="muted">суббота и воскресенье по умолчанию не считаются</div></span>
-        <input type="checkbox" class="switch" id="pk-weekends" ${s && s.weekendsAway ? 'checked' : ''}></label>
+      <div class="field"><span>Обычно не дома по (эти дни не считаются)</span>
+        <div class="pick" id="pk-away">${WEEKDAYS.map((w, i) => {
+    const day = WEEKDAY_NUMS[i];
+    return `<button type="button" class="pick-btn day-pick ${away.includes(day) ? 'on' : ''}" data-action="toggleWeekday" data-day="${day}">${w}</button>`;
+  }).join('')}</div></div>
       <p class="muted">Любой день можно переключить в календаре. Старые дни при смене цены не пересчитываются.</p>
       <p class="error" id="pk-error" role="alert"></p>
       <button class="btn primary" data-action="saveParking">Сохранить</button>`);
@@ -402,13 +416,17 @@ export function createExpenses(ctx) {
 
     editParking() { openSheet(parkingForm(parking())); },
 
+    toggleWeekday(el) { el.classList.toggle('on'); },
+
     async saveParking() {
       const res = P.validateParkingInput({
         rate: val('pk-rate'), rateFrom: val('pk-rate-from'), since: val('pk-since'),
-        weekendsAway: document.getElementById('pk-weekends').checked,
+        awayWeekdays: [...document.querySelectorAll('#pk-away .on')].map((b) => b.dataset.day),
       }, parking(), today());
       if (res.error) { showFormError('pk-error', res.error); return; }
-      await db.put('settings', { ...(parking() || {}), id: HOME_PARKING_ID, ...res.settings });
+      // weekendsAway — старое поле (0.4.1), теперь вместо него awayWeekdays.
+      const { weekendsAway, ...old } = parking() || {};
+      await db.put('settings', { ...old, id: HOME_PARKING_ID, ...res.settings });
       location.hash = '#/expenses/parking';
       await done('Парковка настроена');
     },
