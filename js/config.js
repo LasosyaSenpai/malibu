@@ -1,16 +1,19 @@
 // Все константы приложения. Никаких «магических» чисел и строк в других файлах.
 
-export const APP_VERSION = '0.6.2';
+export const APP_VERSION = '0.7.0';
 export const APP_ID = 'malibu-assistant';
 
 // Хранилище на телефоне (IndexedDB). Новые разделы — добавлять в STORES и поднимать DB_VERSION.
 export const DB_NAME = 'malibu-assistant';
-export const DB_VERSION = 5;
-export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays', 'photos'];
+export const DB_VERSION = 6;
+export const STORES = ['car', 'odometer', 'meta', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays',
+  'photos', 'docs', 'digest'];
 
 // Что попадает в файл-бекап и в Google Таблицу. `meta` — настройки этого телефона, туда не идут.
 // `settings` — общие настройки (домашняя парковка), `parkingDays` — дни, отмеченные в календаре парковки.
-export const BACKUP_STORES = ['car', 'odometer', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays'];
+// `docs` — документы и сроки, `digest` — сводка для напоминаний в Telegram (считается телефоном).
+export const BACKUP_STORES = ['car', 'odometer', 'works', 'plans', 'parts', 'stock', 'fuel', 'expenses', 'settings', 'parkingDays',
+  'docs', 'digest'];
 // Только в файле-бекапе: фото слишком большие для Google Таблицы (решение 26.09).
 export const FILE_ONLY_STORES = ['photos'];
 export const FILE_BACKUP_STORES = [...BACKUP_STORES, ...FILE_ONLY_STORES];
@@ -45,6 +48,12 @@ export const SYNC_ERRORS = {
   too_many: 'Слишком много записей за раз — нажми «Сохранить сейчас» ещё раз',
   server: 'Ошибка в Google Таблице — попробуй позже',
   network: 'Нет связи с Google — сохраню, когда появится интернет',
+  need_auth: 'Google ещё не дал бекапу разрешение на Telegram — сделай шаг «Разрешить» из инструкции (редактор скрипта → authorize → Выполнить)',
+  unknown_action: 'Бекап-сервер ещё не обновлён — попробуй чуть позже',
+  tg_bad_token: 'Токен не подходит — скопируй его из @BotFather целиком',
+  tg_no_start: 'Бот пока не получил «Start» — открой бота, нажми Start и потом «Проверить»',
+  tg_not_set: 'Сначала вставь токен бота',
+  tg_send: 'Telegram не принял сообщение — попробуй ещё раз',
 };
 
 export const SOURCE_LABELS = {
@@ -151,6 +160,23 @@ export const PHOTO_JPEG_QUALITY = 0.82;
 // Библиотека PDF и шрифт с кириллицей лежат в приложении — выгрузка работает без интернета.
 export const PDF_LIBS = ['vendor/jspdf.umd.min.js', 'vendor/jspdf.plugin.autotable.min.js'];
 export const PDF_FONTS = { normal: 'vendor/Montserrat-Regular.ttf', bold: 'vendor/Montserrat-SemiBold.ttf' };
+
+// ---------- Документы и сроки, напоминания в Telegram (решения 27.09) ----------
+
+export const DOC_KINDS = [
+  { key: 'osago', label: 'Автоцивилка (ОСЦПВ)', icon: 'shield' },
+  { key: 'firstaid', label: 'Аптечка', icon: 'firstaid' },
+  { key: 'extinguisher', label: 'Огнетушитель', icon: 'flame' },
+  { key: 'license', label: 'Водительские права', icon: 'id' },
+  { key: 'other', label: 'Другое', icon: 'file' },
+];
+export const DOC_REMIND_DAYS = 14; // напомнить за столько дней (можно поменять у каждого срока)
+export const DOC_REMIND_CHOICES = [7, 14, 30, 60];
+export const DOC_URGENT_DAYS = 3; // осталось столько или меньше — срочно (красным)
+// Сводка для Telegram: приложение кладёт её в Google Таблицу (раздел digest), бекап-сервер пишет по ней в 12:00.
+export const DIGEST_ID = 'current';
+export const TELEGRAM_HOUR = 12;
+export const BOTFATHER_URL = 'https://t.me/BotFather';
 
 // Домашняя парковка (решение 26.09): платно каждые сутки, кроме ночей «не дома». Итог — одной строкой на месяц.
 export const HOME_PARKING_CATEGORY = { key: 'homeParking', label: 'Парковка у дома', icon: 'home' };

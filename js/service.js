@@ -4,6 +4,7 @@
 import * as db from './db.js';
 import * as L from './logic.js';
 import * as M from './maintenance.js';
+import * as D from './docs.js';
 import { CATEGORIES, NODES } from './config.js';
 import { icon } from './icons.js';
 import { celebrate, clearSheet, confirmTwice, esc, hint, openSheet, sheet, showFormError, toast } from './ui.js';
@@ -17,7 +18,7 @@ const TABS = [
 const CASES = ['дело', 'дела', 'дел'];
 const WORKS = ['работа', 'работы', 'работ'];
 const YEARS = ['год', 'года', 'лет'];
-const SHARE_COLORS = ['#1B2345', '#7C5CD6', '#A993EA', '#D3C8F5', '#E6E1F5'];
+const SHARE_COLORS = [0, 1, 2, 3, 4].map((i) => `var(--ring-${i})`); // цвета темы, см. styles.css
 const LEVEL_CLASS = { ok: 'lv-ok', wa: 'lv-wa', bad: 'lv-bad' };
 
 // ctx: { state, currentKm(), afterChange() } — связь с app.js.
@@ -53,13 +54,22 @@ export function createService(ctx) {
   const chips = (active) => `<h1>Обслуживание</h1>
     <nav class="chips">${TABS.map(([id, label]) => `<a href="#/service/${id}" class="${id === active ? 'on' : ''}">${label}</a>`).join('')}</nav>`;
   const nodeHref = (key) => `#/service/node/${key}`;
-  const soonHref = (item) => (item.kind === 'node' ? nodeHref(item.key) : '#/service/plans');
+  const soonHref = (item) => {
+    if (item.kind === 'node') return nodeHref(item.key);
+    return item.kind === 'doc' ? '#/more' : '#/service/plans';
+  };
+  // «Скоро пора»: узлы, срочные планы и подходящие сроки документов (решение 27.09). Срочное — первым,
+  // среди одинаковых — сначала документы (у них настоящая дата, в отличие от «нет данных»).
+  const RANK = { bad: 0, wa: 1 };
+  const order = (i) => RANK[i.level] * 2 + (i.kind === 'doc' ? 0 : 1);
+  const soonAll = (st) => [...M.soonItems(st, state.plans), ...D.docSoon(state.docs, today())]
+    .sort((a, b) => order(a) - order(b));
 
   // ---------- Экраны ----------
 
   function overview() {
     const st = statuses();
-    const soon = M.soonItems(st, state.plans);
+    const soon = soonAll(st);
     const oil = st.find((s) => s.node.key === 'oil');
     const plans = openPlans();
     const last = sortedWorks()[0];
@@ -218,10 +228,10 @@ export function createService(ctx) {
   function homeCard() {
     const st = statuses();
     // Масло показываем всегда первой строкой, поэтому из «скоро пора» его убираем.
-    const soon = M.soonItems(st, state.plans).filter((i) => i.key !== 'oil').slice(0, 4);
+    const soon = soonAll(st).filter((i) => i.key !== 'oil').slice(0, 4);
     const oil = st.find((s) => s.node.key === 'oil');
     return `<section class="card">
-      <div class="row-between"><h2>Обслуживание</h2><a class="link-btn" href="#/service">всё →</a></div>
+      <div class="row-between"><h2>${state.docs.length ? 'Обслуживание и сроки' : 'Обслуживание'}</h2><a class="link-btn" href="#/service">всё →</a></div>
       <div class="lines">${dotLine(oil.status.level, 'Масло двигателя', oil.status.label, nodeHref('oil'))}
       ${soon.map((i) => dotLine(i.level, i.title, i.label, soonHref(i))).join('')}</div></section>`;
   }
@@ -483,5 +493,5 @@ export function createService(ctx) {
     },
   };
 
-  return { view, homeCard, actions };
+  return { view, homeCard, statuses, actions };
 }

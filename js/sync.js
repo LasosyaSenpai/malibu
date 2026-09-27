@@ -33,6 +33,11 @@ async function call(url, body) {
   return out;
 }
 
+// Любое другое действие бекап-сервера (напоминания в Telegram): { action, ... } → ответ сервера.
+export function api(url, body) {
+  return call(url, body);
+}
+
 // Проверить код подключения. Возвращает адрес Google Таблицы.
 export async function ping(url) {
   const out = await call(url, { action: 'ping' });

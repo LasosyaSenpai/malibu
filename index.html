@@ -16,6 +16,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="css/styles.css">
+  <script>
+    // Тема до отрисовки, чтобы вечером не было белой вспышки (подробно — js/theme.js).
+    (function () {
+      var t = 'auto';
+      try { t = localStorage.getItem('malibu-theme') || 'auto'; } catch (e) {}
+      var dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#101826');
+    })();
+  </script>
 </head>
 <body>
   <div id="app"></div>

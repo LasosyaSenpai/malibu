@@ -12,6 +12,10 @@ import {
 import { createService } from './service.js';
 import { createExpenses } from './expenses.js';
 import { createPhotos } from './photos.js';
+import { createReminders } from './reminders.js';
+import { applyTheme, savedTheme, THEMES } from './theme.js';
+import { docTip } from './docs.js';
+import { fuelSegments } from './costs.js';
 
 const $app = document.getElementById('app');
 
@@ -27,6 +31,7 @@ const state = {
   parkingSettings: null,
   parkingDays: [],
   photos: [],
+  docs: [],
   meta: { id: 'meta' },
   onboarding: false,
   step: 1,
@@ -48,6 +53,7 @@ async function load() {
   state.parkingSettings = await db.get('settings', HOME_PARKING_ID);
   state.parkingDays = await db.getAll('parkingDays');
   state.photos = await db.getAll('photos');
+  state.docs = await db.getAll('docs');
   state.meta = (await db.get('meta', 'meta')) || { id: 'meta' };
 }
 
@@ -80,6 +86,8 @@ async function runSync() {
   state.sync.busy = true;
   refreshSyncStatus();
   try {
+    // Сводка для напоминаний в Telegram уходит в Таблицу вместе с остальным.
+    if (state.car) await reminders.refreshDigest().catch((err) => console.warn('digest', err));
     const res = await syncNow(state.meta.syncUrl, state.meta.lastSyncAt);
     await saveMeta({ lastSyncAt: res.startedAt });
     state.sync.error = '';
@@ -132,6 +140,12 @@ setSheetCloser(closeSheet);
 const service = createService({ state, currentKm: () => currentReading().km, afterChange });
 const expenses = createExpenses({ state, currentKm: () => currentReading().km, afterChange });
 const photos = createPhotos({ state, afterChange, saveMeta });
+const reminders = createReminders({
+  state, afterChange, saveMeta,
+  statuses: () => service.statuses(),
+  currentKm: () => currentReading().km,
+  avgL100: () => fuelSegments(state.fuel).avgL100,
+});
 
 const importInput = () => '<input type="file" accept=".json,application/json" hidden data-change="importFile">';
 
@@ -215,7 +229,9 @@ function homeView() {
   const today = L.todayIso();
   const stats = L.drivingStats(c, latest, today);
   const backups = [state.meta.lastExportAt, state.meta.lastSyncAt].filter(Boolean).sort();
-  const tip = L.pickTip({ latest, lastBackupAt: backups.pop() || null, today });
+  // Подходит срок документа — акулёнок говорит об этом в первую очередь.
+  const docText = docTip(state.docs, today);
+  const tip = docText ? { text: docText, mood: 'oh' } : L.pickTip({ latest, lastBackupAt: backups.pop() || null, today });
   // Шапка — фото Malibu с пробегом (решение 26.09), акулёнок — только ниже, у напоминания.
   // Своё фото из «Моя Malibu» — если включено «Обложка на главной». Нажатие — страница с фото.
   return `
@@ -256,6 +272,9 @@ function moreView() {
       ${kv('VIN', c.vin || '—')}
       ${kv('Куплена', `${L.formatDate(c.purchaseDate)} · ${L.formatKm(c.purchaseKm)} км`)}
     </section>
+    ${reminders.docsBlock()}
+    <button class="list-btn" data-action="openTelegram">${icon('send', 'accent')}<span class="grow">Напоминания в Telegram</span>
+      <span class="muted">${state.meta.tg?.linked ? 'подключены' : ''}</span>${icon('chevron')}</button>
     <a class="list-btn" href="#/more/photos">${icon('camera', 'accent')}<span class="grow">Моя Malibu — фото</span>
       <span class="muted">${state.photos.length || ''}</span>${icon('chevron')}</a>
     <button class="list-btn" data-action="openServiceBook">${icon('file', 'accent')}<span class="grow">Сервисная книжка (PDF)</span>${icon('chevron')}</button>
@@ -275,6 +294,12 @@ function moreView() {
         <button class="btn primary small" data-action="doExport">${icon('download')} Экспорт</button>
         <label class="btn outline small">${icon('upload')} Импорт${importInput()}</label>
       </div>
+    </section>
+    <section class="card stack">
+      <h2>Оформление</h2>
+      <div class="pick">${THEMES.map(([key, label]) => `<button type="button" class="pick-btn ${savedTheme() === key ? 'on' : ''}"
+        data-action="setTheme" data-value="${key}">${label}</button>`).join('')}</div>
+      <p class="muted">«Как на телефоне» — тёмная, когда на айфоне включено тёмное оформление (например, вечером).</p>
     </section>
     <section class="card">
       <h2>История пробега</h2>
@@ -623,6 +648,14 @@ const actions = {
 
   liveTap(el) { liveTap(el); },
 
+  async setTheme(el) {
+    applyTheme(el.dataset.value);
+    await saveMeta({ theme: el.dataset.value });
+    render();
+  },
+
+  ...reminders.actions,
+
   ...service.actions,
   ...expenses.actions,
   ...photos.actions,
@@ -665,6 +698,7 @@ window.addEventListener('hashchange', () => {
 });
 
 async function boot() {
+  applyTheme();
   await load();
   state.onboarding = !state.car;
   // Давно не открывала приложение — акулёнок «спал» (показываем один раз, до следующего действия).

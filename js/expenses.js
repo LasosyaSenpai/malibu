@@ -13,7 +13,8 @@ import { icon } from './icons.js';
 import { celebrate, clearSheet, confirmTwice, esc, hint, openSheet, sheet, showFormError, toast } from './ui.js';
 
 const TABS = [['overview', 'Обзор'], ['fuel', 'Заправки'], ['all', 'Все расходы']];
-const RING_COLORS = ['#1B2345', '#7C5CD6', '#A993EA', '#D3C8F5', '#E6E1F5'];
+// Цвета — из темы (светлая / ночная), см. --ring-* в styles.css.
+const RING_COLORS = [0, 1, 2, 3, 4].map((i) => `var(--ring-${i})`);
 const RING_R = 52;
 const OTHER_STATION = 'Другая';
 // После покупок акулёнок гордый (решение 26.09).
@@ -57,11 +58,11 @@ export function createExpenses(ctx) {
     const arcs = total ? parts.map((p, i) => {
       const part = (len * p.total) / total;
       const gap = parts.length > 1 ? 1.5 : 0;
-      const arc = `<circle cx="70" cy="70" r="${RING_R}" fill="none" stroke="${RING_COLORS[i]}" stroke-width="18"
+      const arc = `<circle cx="70" cy="70" r="${RING_R}" fill="none" style="stroke:${RING_COLORS[i]}" stroke-width="18"
         stroke-dasharray="${Math.max(part - gap, 0.5)} ${len}" stroke-dashoffset="${-offset}" transform="rotate(-90 70 70)"/>`;
       offset += part;
       return arc;
-    }).join('') : `<circle cx="70" cy="70" r="${RING_R}" fill="none" stroke="#EEEAF8" stroke-width="18"/>`;
+    }).join('') : `<circle cx="70" cy="70" r="${RING_R}" fill="none" style="stroke:var(--track)" stroke-width="18"/>`;
     return `<svg class="ring" viewBox="0 0 140 140" aria-hidden="true">${arcs}
       <text x="70" y="64" text-anchor="middle" class="ring-cap">${esc(caption)}</text>
       <text x="70" y="84" text-anchor="middle" class="ring-sum">${money(total)}</text></svg>`;
