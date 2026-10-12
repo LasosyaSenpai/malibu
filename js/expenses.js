@@ -210,10 +210,12 @@ export function createExpenses(ctx) {
     const row = (it) => {
       const c = C.costCategory(it.category);
       const sub = [L.formatDate(it.date).slice(0, 5),
-        it.kind === 'work' ? 'из ТО' : it.kind === 'fuel' ? `${C.formatDecimal(it.liters, it.liters % 1 ? 1 : 0)} л` : '',
+        it.kind === 'work' ? 'из ТО' : it.kind === 'stock' ? 'запчасти' : it.kind === 'fuel' ? `${C.formatDecimal(it.liters, it.liters % 1 ? 1 : 0)} л` : '',
+        it.kind === 'work' && it.prepaid ? 'только работа' : '',
         it.kind === 'parking' ? nights(it.nights) : ''].filter(Boolean).join(' · ');
-      const inner = `<span class="ic-box">${icon(c.icon)}</span><span class="grow"><b>${esc(it.title)}</b><div class="muted">${sub}</div></span><b class="money">${money(it.sum)}</b>`;
+      const inner = `<span class="ic-box">${icon(it.kind === 'stock' ? 'box' : c.icon)}</span><span class="grow"><b>${esc(it.title)}</b><div class="muted">${sub}</div></span><b class="money">${money(it.sum)}</b>`;
       if (it.kind === 'work') return `<a class="line" href="#/service/work/${esc(it.id)}">${inner}</a>`;
+      if (it.kind === 'stock') return `<a class="line" href="${it.workId ? `#/service/work/${esc(it.workId)}` : '#/service/plans'}">${inner}</a>`;
       if (it.kind === 'parking') return `<a class="line" href="#/expenses/parking/${C.monthKey(it.date)}">${inner}</a>`;
       return `<button class="line plain-btn" data-action="${it.kind === 'fuel' ? 'editFuel' : 'editExpense'}" data-id="${esc(it.id)}">${inner}</button>`;
     };
@@ -221,7 +223,7 @@ export function createExpenses(ctx) {
       <button class="btn outline small" data-action="newExpense">${icon('plus')} Расход (мойка, парковка, покупки…)</button>
       ${months.map((m) => `<div class="sec">${C.monthTitle(m.key)} · ${formatMoney(m.items.reduce((s, i) => s + i.sum, 0))}</div>
         <section class="card lines">${m.items.map(row).join('')}</section>`).join('') || '<p class="muted">Пока пусто.</p>'}
-      <p class="muted">Работы на СТО попадают сюда сами из «Обслуживания».</p>`;
+      <p class="muted">Работы на СТО и запчасти попадают сюда сами из «Обслуживания».</p>`;
   }
 
   function view(sub) {

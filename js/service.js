@@ -132,24 +132,41 @@ export function createService(ctx) {
   }).join('') || '<p class="muted">Работ пока нет — нажми «+ Работа».</p>'}</div>`;
   }
 
+  // Строка запчасти: что, когда и где куплено, цена. Нажатие — изменить.
+  const stockMeta = (s) => [s.date ? L.formatDate(s.date) : '', s.shop, s.note].filter(Boolean).map(esc).join(' · ');
+  const stockLine = (s) => `<button class="line plain-btn" data-action="editStock" data-id="${esc(s.id)}">
+    <span class="grow">${esc(s.name)}${stockMeta(s) ? `<span class="muted sub">${stockMeta(s)}</span>` : ''}</span>
+    <b class="money">${s.price ? M.formatMoney(s.price) : ''}</b></button>`;
+
+  // План: «Куплены запчасти» → полдела (полоска из двух половинок, решение 12.10) → «Сделано».
+  function planCard(p) {
+    const got = M.planStock(state.stock, p.id);
+    return `<section class="card">
+      <button class="plain-btn" data-action="editPlan" data-id="${esc(p.id)}">
+        <div class="row-between"><b class="grow">${esc(p.title)}</b>${catTag(p.category)}</div>
+        <div class="row-between muted"><span class="${p.urgent ? 'lv-text lv-bad' : ''}">${esc(p.due || '')}</span>
+        <span>${p.estimate ? `~${M.formatMoney(p.estimate)}` : ''}</span></div>
+        ${p.note ? `<div class="muted">${esc(p.note)}</div>` : ''}</button>
+      <div class="halves" role="img" aria-label="${got.length ? 'Запчасти куплены, осталось СТО' : 'Запчасти ещё не куплены'}"><i class="${got.length ? 'on' : ''}"></i><i></i></div>
+      ${got.length ? `<div class="plan-parts lines">${got.map(stockLine).join('')}</div>` : ''}
+      <div class="row">
+        <button class="btn outline small" data-action="buyParts" data-plan="${esc(p.id)}">${got.length ? `${icon('plus')} Ещё деталь` : `${icon('box')} Куплены запчасти`}</button>
+        <button class="btn primary small" data-action="planDone" data-id="${esc(p.id)}">${icon('check')} Сделано</button>
+      </div>
+    </section>`;
+  }
+
   function plansView() {
     const done = state.plans.filter((p) => p.done);
+    const free = M.freeStock(state.stock);
+    const freeSum = M.stockSum(free);
     return `${chips('plans')}
       <button class="btn outline small" data-action="editPlan">${icon('plus')} Добавить план</button>
-      ${openPlans().map((p) => `<section class="card">
-        <button class="plain-btn" data-action="editPlan" data-id="${esc(p.id)}">
-          <div class="row-between"><b class="grow">${esc(p.title)}</b>${catTag(p.category)}</div>
-          <div class="row-between muted"><span class="${p.urgent ? 'lv-text lv-bad' : ''}">${esc(p.due || '')}</span>
-          <span>${p.estimate ? `~${M.formatMoney(p.estimate)}` : ''}</span></div>
-          ${p.note ? `<div class="muted">${esc(p.note)}</div>` : ''}</button>
-        <button class="btn outline small" data-action="planDone" data-id="${esc(p.id)}">${icon('check')} Сделано</button>
-      </section>`).join('') || '<p class="muted">Планов нет.</p>'}
+      ${openPlans().map(planCard).join('') || '<p class="muted">Планов нет.</p>'}
       ${done.length ? `<div class="sec">Сделано · ${done.length}</div><section class="card lines">${done.map((p) => `<div class="line">
         <span class="dot lv-ok"></span><span class="grow muted">${esc(p.title)}</span></div>`).join('')}</section>` : ''}
-      <div class="sec">В запасе <button class="link-btn" data-action="editStock">+ добавить</button></div>
-      ${state.stock.map((s) => `<button class="card node plain-btn" data-action="editStock" data-id="${esc(s.id)}">
-        <div class="node-head"><span class="ic-box">${icon('box')}</span><div class="grow"><b>${esc(s.name)}</b>
-        ${s.note ? `<div class="muted">${esc(s.note)}</div>` : ''}</div></div></button>`).join('') || '<p class="muted">Пусто</p>'}`;
+      <div class="sec">В запасе, без плана${freeSum ? ` · ${M.formatMoney(freeSum)}` : ''} <button class="link-btn" data-action="editStock">+ добавить</button></div>
+      ${free.length ? `<section class="card lines">${free.map(stockLine).join('')}</section>` : '<p class="muted">Пусто</p>'}`;
   }
 
   function partsView() {
@@ -198,6 +215,17 @@ export function createService(ctx) {
       <button class="btn primary" data-action="nodeDone" data-key="${esc(key)}">${icon('check')} ${verb}</button>`;
   }
 
+  // Запчасти, купленные заранее к плану и ушедшие в эту работу (их деньги — в «Расходах» месяца покупки).
+  const workStock = (w) => state.stock.filter((s) => s.usedWorkId === w.id);
+  function prepaidCard(w) {
+    const list = workStock(w);
+    if (!list.length) return '';
+    return `<section class="card"><div class="muted">Детали куплены заранее</div><div class="lines">${list.map((s) => `<div class="line">
+      <span class="grow">${esc(s.name)}${stockMeta(s) ? `<span class="muted sub">${stockMeta(s)}</span>` : ''}</span>
+      <b class="money">${s.price ? M.formatMoney(s.price) : ''}</b></div>`).join('')}</div>
+      <div class="muted">В «Расходах» — в месяце покупки, здесь — в сумме работы</div></section>`;
+  }
+
   function workView(id) {
     const w = state.works.find((x) => x.id === id);
     if (!w) return historyView();
@@ -207,9 +235,10 @@ export function createService(ctx) {
       <section class="card"><b class="big">${esc(M.workTitle(w))}</b><div class="muted">${kmDate(w.date, w.km)}</div></section>
       <section class="card lines">${one ? `<div class="row-between">${catTag(w.lines[0].category)}</div>` : (w.lines || []).map((l) => `<div class="line-col">
         <div class="row-between"><span class="grow">${esc(l.title)}</span>${catTag(l.category)}</div>
-        <div class="row-between muted"><span>${l.action === 'check' ? 'проверка' : `работа ${M.formatMoney(l.labor || 0)} · детали ${M.formatMoney(l.parts || 0)}`}</span></div></div>`).join('')}
+        <div class="row-between muted"><span>${l.action === 'check' ? 'проверка' : `работа ${M.formatMoney(l.labor || 0)} · детали ${M.formatMoney((Number(l.parts) || 0) + (Number(l.prepaid) || 0))}`}</span></div></div>`).join('')}
         <div class="row-between total"><b>Итого</b><b>${M.formatMoney(t.total)}</b></div>
         <div class="muted">работа ${M.formatMoney(t.labor)} · детали ${M.formatMoney(t.parts)}</div></section>
+      ${prepaidCard(w)}
       ${w.shop ? `<section class="card"><div class="muted">СТО / мастер</div><b>${esc(w.shop)}</b></section>` : ''}
       ${w.note ? `<section class="card"><div class="muted">Заметка</div><div>${esc(w.note)}</div></section>` : ''}
       <div class="row"><button class="btn outline small" data-action="editWork" data-id="${esc(w.id)}">Изменить</button>
@@ -238,22 +267,33 @@ export function createService(ctx) {
 
   // ---------- Формы ----------
 
+  // Итог в форме работы: заранее купленные детали + работа + детали на СТО.
+  const totalText = (prepaid, labor, parts) => M.formatMoney(prepaid + (labor || 0) + (parts || 0));
+
+  // opts.bought — запчасти плана, купленные заранее (при «Сделано»): они уже в «Расходах», вписать нужно только работу.
   function workForm(w, opts = {}) {
     const line = (w.lines || [])[0] || {};
     const multi = (w.lines || []).length > 1;
     const checked = new Set(opts.nodes || line.nodes || []);
     const v = (x) => esc(x ?? '');
-    return sheet(w.id ? 'Изменить работу' : 'Новая работа', `
+    const bought = opts.bought || (w.id ? workStock(w) : []);
+    const prepaid = opts.bought ? M.stockSum(opts.bought) : Number(line.prepaid) || 0;
+    const pre = !multi && (prepaid > 0 || bought.length > 0);
+    return sheet(w.id ? 'Изменить работу' : opts.planId ? 'Сделано' : 'Новая работа', `
       <label class="field"><span>Что сделали</span><input id="w-title" value="${v(w.title || line.title)}" placeholder="Замена масла и фильтра"></label>
       <div class="row">
         <label class="field"><span>Дата</span><input id="w-date" type="date" value="${v(w.date || today())}"></label>
         <label class="field"><span>Пробег, км</span><input id="w-km" inputmode="numeric" value="${w.km != null ? L.formatKm(w.km) : v(opts.km)}"></label>
       </div>
       ${multi ? '' : `<label class="field"><span>Категория</span><select id="w-cat">${CATEGORIES.map((c) => `<option value="${c.key}" ${c.key === (line.category || opts.category || 'to') ? 'selected' : ''}>${c.label}</option>`).join('')}</select></label>
+      ${pre ? `<div class="field"><span>Детали — уже учтены</span><div class="prepaid lines">${bought.map((s) => `<div class="line">
+        <span class="grow">${esc(s.name)}${s.date ? `<span class="muted sub">куплено ${L.formatDate(s.date)}</span>` : ''}</span>
+        <b class="money">${s.price ? M.formatMoney(s.price) : ''}</b></div>`).join('') || `<div class="line"><span class="grow">Куплены заранее</span><b class="money">${M.formatMoney(prepaid)}</b></div>`}</div></div>` : ''}
       <div class="row">
-        <label class="field"><span>Работа, грн</span><input id="w-labor" inputmode="decimal" value="${line.labor ? L.formatKm(line.labor) : ''}"></label>
-        <label class="field"><span>Детали, грн</span><input id="w-parts" inputmode="decimal" value="${line.parts ? L.formatKm(line.parts) : ''}"></label>
-      </div>`}
+        <label class="field"><span>${pre ? 'Работа на СТО, грн' : 'Работа, грн'}</span><input id="w-labor" inputmode="decimal" value="${line.labor ? L.formatKm(line.labor) : ''}"></label>
+        <label class="field"><span>${pre ? 'Ещё детали на СТО' : 'Детали, грн'}</span><input id="w-parts" inputmode="decimal" value="${line.parts ? L.formatKm(line.parts) : ''}"${pre ? ' placeholder="если были"' : ''}></label>
+      </div>
+      ${pre ? `<div class="card row-between work-total"><span>Итого за работу</span><b id="w-total" data-prepaid="${prepaid}">${totalText(prepaid, line.labor, line.parts)}</b></div>` : ''}`}
       <label class="field"><span>СТО / мастер <em>необязательно</em></span><input id="w-shop" value="${v(w.shop)}"></label>
       <label class="field"><span>Заметка <em>необязательно</em></span><input id="w-note" value="${v(w.note)}"></label>
       ${multi ? '' : `<div class="field"><span>Что заменили или проверили — для графика ТО</span>
@@ -295,14 +335,44 @@ export function createService(ctx) {
       ${p.id ? `<button class="btn link danger" data-action="deletePart" data-id="${v(p.id)}">Удалить</button>` : ''}`);
   }
 
-  function stockForm(s) {
+  // Запчасть: новая покупка к плану, правка купленной или «в запас» без плана (решение 12.10).
+  // opts.planId — к какому плану, opts.tab: 'new' | 'stock' (взять из запаса).
+  function stockForm(s, opts = {}) {
     const v = (x) => esc(x ?? '');
-    return sheet(s.id ? 'В запасе' : 'Добавить в запас', `
-      <label class="field"><span>Что лежит</span><input id="s-name" value="${v(s.name)}" placeholder="Антифриз ACDelco Dex-Cool"></label>
-      <label class="field"><span>Заметка</span><input id="s-note" value="${v(s.note)}" placeholder="концентрат, 3,78 л"></label>
+    const planId = s.planId || opts.planId || '';
+    const plan = find(state.plans, planId);
+    const free = M.freeStock(state.stock);
+    const used = Boolean(s.usedWorkId || s.usedAt);
+    const fromStock = !s.id && plan && opts.tab === 'stock';
+    const seg = !s.id && plan && free.length ? `<div class="seg" role="tablist">
+      <button class="${fromStock ? '' : 'on'}" data-action="buyParts" data-plan="${v(plan.id)}">Новая покупка</button>
+      <button class="${fromStock ? 'on' : ''}" data-action="buyFromStock" data-plan="${v(plan.id)}">Взять из запаса</button></div>` : '';
+    const title = s.id ? (plan ? 'Запчасть к плану' : 'В запасе') : plan ? 'Куплены запчасти' : 'Добавить в запас';
+    const forPlan = plan ? `<p class="muted">для плана «${esc(plan.title)}»</p>` : '';
+    if (fromStock) {
+      return sheet(title, `${forPlan}${seg}
+        <div class="card lines pick-list">${free.map((x, i) => `<label class="line pick-row">
+          <input type="radio" name="s-pick" value="${v(x.id)}" ${i === 0 ? 'checked' : ''}>
+          <span class="grow">${esc(x.name)}${stockMeta(x) ? `<span class="muted sub">${stockMeta(x)}</span>` : ''}</span>
+          <b class="money">${x.price ? M.formatMoney(x.price) : ''}</b></label>`).join('')}</div>
+        <p class="muted">Уйдёт из запаса в этот план, его цена войдёт в сумму работы. В «Расходах» второй раз не посчитается</p>
+        <p class="error" id="s-error" role="alert"></p>
+        <button class="btn primary" data-action="takeStock" data-plan="${v(plan.id)}">Взять в план</button>`);
+    }
+    return sheet(title, `${forPlan}${seg}
+      <label class="field"><span>${plan ? 'Что купила' : 'Что лежит'}</span><input id="s-name" value="${v(s.name)}" placeholder="${plan ? 'Втулки Febi 41007, 2 шт' : 'Антифриз ACDelco Dex-Cool'}"></label>
+      <div class="row">
+        <label class="field"><span>Сколько потратила, грн</span><input id="s-price" inputmode="decimal" value="${s.price ? L.formatKm(s.price) : ''}"></label>
+        <label class="field"><span>Дата покупки</span><input id="s-date" type="date" value="${v(s.id ? s.date : today())}"></label>
+      </div>
+      <label class="field"><span>Где купила <em>необязательно</em></span><input id="s-shop" value="${v(s.shop)}" placeholder="Rozetka"></label>
+      <label class="field"><span>Заметка <em>необязательно</em></span><input id="s-note" value="${v(s.note)}" placeholder="${plan ? 'артикул, количество' : 'концентрат, 3,78 л'}"></label>
+      <p class="muted">${used ? 'Уже ушло в работу — сумма учтена в ней' : 'Сумма попадёт в «Расходы» в месяц покупки'}</p>
       <p class="error" id="s-error" role="alert"></p>
-      <button class="btn primary" data-action="saveStock" data-id="${v(s.id)}">Сохранить</button>
-      ${s.id ? `<button class="btn link danger" data-action="deleteStock" data-id="${v(s.id)}">Использовано — убрать</button>` : ''}`);
+      <button class="btn primary" data-action="saveStock" data-id="${v(s.id)}" data-plan="${v(planId)}">Сохранить</button>
+      ${s.id && !used && s.planId ? `<button class="btn link" data-action="unplanStock" data-id="${v(s.id)}">Вернуть в запас (без плана)</button>` : ''}
+      ${s.id && !used && !s.planId ? `<button class="btn link" data-action="useStock" data-id="${v(s.id)}">Использовано — убрать из запаса</button>` : ''}
+      ${s.id && !used ? `<button class="btn link danger" data-action="deleteStock" data-id="${v(s.id)}">Удалить запись</button>` : ''}`);
   }
 
   // Выгрузка «сервисной книжки» (решение 26.09: строгий PDF). Перед сохранением — что показывать.
@@ -408,12 +478,18 @@ export function createService(ctx) {
         const line = { ...(existing?.lines?.[0] || {}), title: res.title, category: val('w-cat') || 'to', labor: res.labor, parts: res.parts, nodes };
         work = { ...(existing || {}), ...header, title: '', lines: [line] };
       }
+      // «Сделано» у плана: запчасти, купленные заранее, переходят в работу (сумма — в prepaid).
+      const plan = find(state.plans, el.dataset.plan);
+      const bought = plan ? M.planStock(state.stock, plan.id) : [];
+      if (bought.length && work.lines.length === 1) {
+        work.lines[0] = { ...work.lines[0], prepaid: M.stockSum(bought), stockIds: bought.map((s) => s.id) };
+      }
       const saved = await db.put('works', work);
+      for (const s of bought) await db.put('stock', { ...s, usedWorkId: saved.id });
       // Пробег из работы — тоже отметка одометра, если он больше последнего.
       if (res.km != null && res.km > ctx.currentKm()) {
         await db.put('odometer', { date: res.date, km: res.km, source: 'work' });
       }
-      const plan = find(state.plans, el.dataset.plan);
       if (plan) await db.put('plans', { ...plan, done: true, doneWorkId: saved.id });
       let cel = null;
       if (plan) cel = { pose: 'excited', text: 'Сделано! Одним делом меньше' };
@@ -425,8 +501,12 @@ export function createService(ctx) {
       if (!confirmTwice(el)) return;
       const w = find(state.works, el.dataset.id);
       await db.put('works', { ...w, deleted: true });
+      // Работа была «Сделано» у плана — план снова открыт, а его запчасти возвращаются к нему.
+      const plans = state.plans.filter((p) => p.doneWorkId === w.id);
+      for (const p of plans) await db.put('plans', { ...p, done: false, doneWorkId: null });
+      for (const s of workStock(w)) await db.put('stock', { ...s, usedWorkId: null });
       location.hash = '#/service/history';
-      await done('Работа удалена');
+      await done(plans.length ? 'Работа удалена, план снова в «Планах»' : 'Работа удалена');
     },
 
     editPlan(el) { openSheet(planForm(find(state.plans, el.dataset.id) || {})); },
@@ -446,13 +526,19 @@ export function createService(ctx) {
 
     async deletePlan(el) {
       if (!confirmTwice(el)) return;
-      await db.put('plans', { ...find(state.plans, el.dataset.id), deleted: true });
-      await done('План удалён');
+      const plan = find(state.plans, el.dataset.id);
+      await db.put('plans', { ...plan, deleted: true });
+      // Купленные к плану запчасти не пропадают — уходят в запас без плана.
+      const got = M.planStock(state.stock, plan.id);
+      for (const s of got) await db.put('stock', { ...s, planId: null });
+      await done(got.length ? 'План удалён, запчасти — в запасе' : 'План удалён');
     },
 
     planDone(el) {
       const p = find(state.plans, el.dataset.id);
-      openSheet(workForm({ title: p.title }, { category: p.category, planId: p.id, km: L.formatKm(ctx.currentKm()) }), { focus: false });
+      openSheet(workForm({ title: p.title }, {
+        category: p.category, planId: p.id, km: L.formatKm(ctx.currentKm()), bought: M.planStock(state.stock, p.id),
+      }), { focus: false });
     },
 
     editPart(el) { openSheet(partForm(find(state.parts, el.dataset.id) || {})); },
@@ -479,19 +565,58 @@ export function createService(ctx) {
 
     editStock(el) { openSheet(stockForm(find(state.stock, el.dataset.id) || {})); },
 
+    buyParts(el) { openSheet(stockForm({}, { planId: el.dataset.plan, tab: 'new' })); },
+
+    buyFromStock(el) { openSheet(stockForm({}, { planId: el.dataset.plan, tab: 'stock' }), { focus: false }); },
+
     async saveStock(el) {
-      const name = val('s-name').trim();
-      if (!name) { showFormError('s-error', 'Напиши, что лежит'); return; }
-      await db.put('stock', { ...(find(state.stock, el.dataset.id) || {}), name, note: val('s-note').trim() });
-      await done('Сохранено');
+      const res = M.validateStockInput({
+        name: val('s-name'), price: val('s-price'), date: val('s-date'), shop: val('s-shop'), note: val('s-note'),
+      }, today());
+      if (res.error) { showFormError('s-error', res.error); return; }
+      const existing = find(state.stock, el.dataset.id);
+      const planId = el.dataset.plan || null;
+      await db.put('stock', { ...(existing || {}), ...res.item, planId: existing ? existing.planId || null : planId });
+      if (!existing && planId) await done('', { celebrate: { pose: 'proud', text: 'Запчасти есть! Полдела сделано' } });
+      else await done('Сохранено');
     },
 
+    async takeStock(el) {
+      const picked = document.querySelector('input[name=s-pick]:checked');
+      const s = picked && find(state.stock, picked.value);
+      if (!s) { showFormError('s-error', 'Выбери, что берёшь из запаса'); return; }
+      await db.put('stock', { ...s, planId: el.dataset.plan });
+      await done(`«${s.name}» — в плане`);
+    },
+
+    async unplanStock(el) {
+      await db.put('stock', { ...find(state.stock, el.dataset.id), planId: null });
+      await done('Вернула в запас');
+    },
+
+    // Использовано без работы: из запаса уходит, а в «Расходах» остаётся (деньги-то потрачены).
+    async useStock(el) {
+      if (!confirmTwice(el)) return;
+      await db.put('stock', { ...find(state.stock, el.dataset.id), usedAt: today() });
+      await done('Убрано из запаса');
+    },
+
+    // Удаление — для ошибочной записи: пропадёт и из «Расходов».
     async deleteStock(el) {
       if (!confirmTwice(el)) return;
       await db.put('stock', { ...find(state.stock, el.dataset.id), deleted: true });
-      await done('Убрано из запаса');
+      await done('Запись удалена');
     },
   };
 
-  return { view, homeCard, statuses, actions };
+  // Итог в форме «Сделано» пересчитывается при вводе сумм.
+  function onInput(e) {
+    if (e.target.id !== 'w-labor' && e.target.id !== 'w-parts') return;
+    const el = document.getElementById('w-total');
+    if (!el) return;
+    const num = (id) => M.parseMoney(val(id)) || 0;
+    el.textContent = totalText(Number(el.dataset.prepaid) || 0, num('w-labor'), num('w-parts'));
+  }
+
+  return { view, homeCard, statuses, actions, onInput };
 }

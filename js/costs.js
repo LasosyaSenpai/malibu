@@ -161,17 +161,22 @@ export function costCategory(key) {
   return EXPENSE_CATEGORIES.find((c) => c.key === key) || EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1];
 }
 
-// Заправки, расходы, работы на СТО и домашняя парковка (готовые строки из parking.js) — одним списком, новые первыми.
-// Элемент: { kind: 'fuel' | 'expense' | 'work' | 'parking', id, date, category, title, sum }.
-export function costItems({ fuel = [], expenses = [], works = [], parking = [] }) {
+// Заправки, расходы, работы на СТО, запчасти и домашняя парковка (готовые строки из parking.js) — одним списком,
+// новые первыми. Элемент: { kind: 'fuel' | 'expense' | 'work' | 'stock' | 'parking', id, date, category, title, sum }.
+// Запчасти считаются в день покупки, поэтому в работе остаётся только то, что заплачено на СТО (решение 12.10).
+export function costItems({ fuel = [], expenses = [], works = [], stock = [], parking = [] }) {
   const items = [
     ...parking,
     ...fuel.map((f) => ({ kind: 'fuel', id: f.id, date: f.date, category: FUEL_CATEGORY.key,
       title: `Заправка ${f.station || ''}`.trim(), sum: f.sum || 0, liters: f.liters })),
     ...expenses.map((e) => ({ kind: 'expense', id: e.id, date: e.date, category: e.category,
       title: e.note || costCategory(e.category).label, sum: e.sum || 0 })),
-    ...works.map((w) => ({ kind: 'work', id: w.id, date: w.date, category: SERVICE_CATEGORY.key,
-      title: workTitle(w), sum: workTotal(w).total })),
+    ...works.map((w) => {
+      const t = workTotal(w);
+      return { kind: 'work', id: w.id, date: w.date, category: SERVICE_CATEGORY.key, title: workTitle(w), sum: t.total - t.prepaid, prepaid: t.prepaid };
+    }).filter((it) => it.sum || !it.prepaid),
+    ...stock.filter((s) => s.price > 0 && s.date).map((s) => ({ kind: 'stock', id: s.id, date: s.date, category: SERVICE_CATEGORY.key,
+      title: `Детали: ${s.name}`, sum: s.price, workId: s.usedWorkId || null })),
   ];
   return items.sort((a, b) => b.date.localeCompare(a.date) || b.sum - a.sum);
 }

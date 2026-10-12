@@ -58,15 +58,42 @@ function parseKmLoose(text) {
   return /^\d{1,7}$/.test(clean) ? Number(clean) : null;
 }
 
-// Работа = визит (дата, пробег, СТО) + строки. Строка: { title, category, labor, parts, nodes[], action, season }.
+// Работа = визит (дата, пробег, СТО) + строки. Строка: { title, category, labor, parts, nodes[], action, season,
+// prepaid, stockIds[] } — prepaid: детали, купленные заранее к плану (их деньги — в «Расходах» в день покупки).
+// parts в ответе — все детали (на СТО + заранее), prepaid — из них заранее.
+const lineSum = (line) => (Number(line.labor) || 0) + (Number(line.parts) || 0) + (Number(line.prepaid) || 0);
+
 export function workTotal(work) {
   let labor = 0;
   let parts = 0;
+  let prepaid = 0;
   for (const line of work.lines || []) {
     labor += Number(line.labor) || 0;
     parts += Number(line.parts) || 0;
+    prepaid += Number(line.prepaid) || 0;
   }
-  return { labor, parts, total: labor + parts };
+  return { labor, parts: parts + prepaid, prepaid, total: labor + parts + prepaid };
+}
+
+// ---------- Запчасти «в запасе» и к планам (раздел stock, решение 12.10) ----------
+// Запись: { name, price, date, shop, note, planId, usedWorkId, usedAt }. planId — для какого плана куплено,
+// usedWorkId — в какую работу ушло, usedAt — использовано без работы. Деньги — в «Расходах» в день покупки.
+
+export const freeStock = (stock) => stock.filter((s) => !s.planId && !s.usedWorkId && !s.usedAt);
+export const planStock = (stock, planId) => stock.filter((s) => s.planId === planId && !s.usedWorkId && !s.usedAt);
+export const stockSum = (list) => list.reduce((s, x) => s + (Number(x.price) || 0), 0);
+
+// Проверка формы запчасти. Возвращает { error } или { item }.
+export function validateStockInput(raw, today) {
+  const name = String(raw.name || '').trim();
+  if (!name) return { error: 'Напиши, что купила' };
+  const price = parseMoney(raw.price);
+  if (price == null) return { error: 'Сумма — только цифры' };
+  if (price && !raw.date) return { error: 'Укажи дату покупки — по ней сумма попадёт в «Расходы»' };
+  if (raw.date && raw.date > today) return { error: 'Дата не может быть в будущем' };
+  return {
+    item: { name, price: price || null, date: raw.date || null, shop: String(raw.shop || '').trim(), note: String(raw.note || '').trim() },
+  };
 }
 
 // Суммы по категориям, от большей к меньшей.
@@ -74,7 +101,7 @@ export function categoryTotals(works) {
   const sums = new Map();
   for (const w of works) {
     for (const line of w.lines || []) {
-      const sum = (Number(line.labor) || 0) + (Number(line.parts) || 0);
+      const sum = lineSum(line);
       if (sum) sums.set(line.category, (sums.get(line.category) || 0) + sum);
     }
   }

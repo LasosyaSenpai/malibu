@@ -677,7 +677,10 @@ document.addEventListener('change', (e) => {
   }
 });
 
-document.addEventListener('input', (e) => expenses.onInput(e));
+document.addEventListener('input', (e) => {
+  expenses.onInput(e);
+  service.onInput(e);
+});
 
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
