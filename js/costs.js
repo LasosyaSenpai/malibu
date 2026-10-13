@@ -188,6 +188,18 @@ export function totalsByCategory(items) {
   return [...sums.entries()].map(([key, total]) => ({ key, total })).sort((a, b) => b.total - a.total);
 }
 
+// «Всё время» (решение 13.10): все расходы с покупки. items — из costItems (покупка самой машины туда не входит).
+// perMonth — в среднем в месяц (месяцев с покупки, не меньше одного), perKm — цена 1 км по пробегу с покупки.
+export function allTimeStats(items, { since, today, kmStart, kmNow }) {
+  const list = items.filter((i) => !since || i.date >= since);
+  const totals = totalsByCategory(list);
+  const total = totals.reduce((s, c) => s + c.total, 0);
+  const months = Math.max(1, daysBetween(since || today, today) / DAYS_PER_MONTH);
+  const km = kmStart != null && kmNow != null && kmNow > kmStart ? kmNow - kmStart : null;
+  return { totals, total, perMonth: total ? total / months : null, perKm: km && total ? total / km : null, km };
+}
+const DAYS_PER_MONTH = 30.44;
+
 // Сколько проехала за месяц — по записям пробега (любым: вручную, из работ, из заправок).
 // Начало — последняя запись до месяца, если она не старше MONTH_KM_BASE_DAYS дней до его начала
 // (иначе туда попали бы километры прошлых месяцев), а так — первая запись в месяце. Нет данных — null.

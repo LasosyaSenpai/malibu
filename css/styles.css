@@ -342,8 +342,9 @@ a.btn { text-decoration: none; }
 .work-total { padding: 10px 14px; }
 .work-total b { font-size: 17px; }
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; border-radius: 12px; background: var(--track); }
-.seg button { min-height: 38px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
-.seg button.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
+.seg button, .seg a { min-height: 38px; border: 0; border-radius: 10px; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg a { display: grid; place-items: center; text-decoration: none; }
+.seg button.on, .seg a.on { background: var(--card); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .08); }
 .pick-list { padding-top: 0; padding-bottom: 0; }
 .pick-row { cursor: pointer; }
 .pick-row input { width: 20px; height: 20px; min-height: 0; flex: none; accent-color: var(--accent); -webkit-appearance: radio; appearance: radio; padding: 0; margin: 0; }

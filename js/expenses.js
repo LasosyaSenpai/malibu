@@ -142,7 +142,35 @@ export function createExpenses(ctx) {
       <p class="muted">С начала отсчёта — ${formatMoney(total)}</p>`;
   }
 
+  // Переключатель обзора: месяц или всё время с покупки (решение 13.10, вариант А).
+  const periodSeg = (all) => `<nav class="seg" aria-label="Период">
+    <a href="#/expenses/overview" class="${all ? '' : 'on'}">Месяц</a><a href="#/expenses/overview/all" class="${all ? 'on' : ''}">Всё время</a></nav>`;
+
+  function allTimeView() {
+    const since = state.car.purchaseDate || null;
+    const st = C.allTimeStats(items(), { since, today: today(), kmStart: state.car.purchaseKm, kmNow: ctx.currentKm() });
+    const parts = ringParts(st.totals);
+    const top = st.totals[0];
+    const bubble = top
+      ? `С покупки больше всего ушло на ${lower(partLabel(top))} — ${Math.round((top.total / st.total) * 100)}%`
+      : 'Расходов пока нет. Заправилась? Нажми «Заправка»';
+    return `${chips('overview')}
+      ${periodSeg(true)}
+      <p class="muted center-text">${since ? `с покупки · ${L.formatDate(since)} — сегодня` : 'за всё время'}</p>
+      <section class="card ring-card">${ring(parts, st.total, 'с покупки')}
+        <div class="grow">${parts.map((p, i) => `<div class="row-between ring-row"><span class="ring-lbl"><i style="background:${RING_COLORS[i]}"></i>${esc(partLabel(p))}</span>
+          <b>${money(p.total)}</b></div>`).join('') || '<p class="muted">Пусто</p>'}</div></section>
+      <section class="card lines">
+        <div class="row-between line"><span>В среднем в месяц</span><b>${st.perMonth ? `~${formatMoney(st.perMonth)}` : '—'}</b></div>
+        <div class="row-between line"><span>1 км обходится</span><b>${st.perKm ? `${C.formatDecimal(st.perKm, 2)} грн` : '—'}</b></div>
+        <div class="row-between line"><span>Проехала с покупки</span><b>${st.km ? `~${L.formatKm(st.km)} км` : '—'}</b></div>
+      </section>
+      ${hint(bubble)}
+      ${addButtons()}`;
+  }
+
   function overview(param) {
+    if (param === 'all') return allTimeView();
     const now = C.monthKey(today());
     const month = /^\d{4}-\d{2}$/.test(param || '') && param <= now ? param : now;
     const first = C.monthKey(state.car.purchaseDate || today());
@@ -158,6 +186,7 @@ export function createExpenses(ctx) {
       ? `Больше всего в ${monthIn} ушло на ${lower(partLabel(top))} — ${Math.round((top.total / total) * 100)}%`
       : `В ${monthIn} расходов пока нет. Заправилась? Нажми «Заправка»`;
     return `${chips('overview')}
+      ${periodSeg(false)}
       ${monthNav('overview', month, first, now)}
       <section class="card ring-card">${ring(parts, total, MONTHS[Number(month.slice(5)) - 1].toLowerCase())}
         <div class="grow">${parts.map((p, i) => `<div class="row-between ring-row"><span class="ring-lbl"><i style="background:${RING_COLORS[i]}"></i>${esc(partLabel(p))}</span>
